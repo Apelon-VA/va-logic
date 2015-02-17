@@ -4,11 +4,11 @@
   <parent>
     <groupId>gov.vha.isaac</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
   <groupId>gov.vha.isaac</groupId>
   <artifactId>logic-mojo</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.0</version>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>
   <url>http://maven.apache.org</url>
   <properties>
