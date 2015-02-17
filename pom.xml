@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>gov.vha.isaac</groupId>
+        <artifactId>isaac-parent</artifactId>
+        <version>1.3</version>
+    </parent>
+    <artifactId>logic-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>${project.artifactId}: (MMP)</name>
+    <packaging>pom</packaging>
+    <properties>
+        <ochre.version>2.9</ochre.version>
+        <snorocket-core.version>2.5.7</snorocket-core.version>
+        <newtons-cradle.version>1.2</newtons-cradle.version>
+        <isaac-metadata.version>1.8</isaac-metadata.version>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>au.csiro</groupId>
+                <artifactId>snorocket-core</artifactId>
+                <version>${snorocket-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>gov.vha.isaac</groupId>
+                <artifactId>tcc-api</artifactId>
+                <version>${ochre.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>newtons-cradle</artifactId>
+                <version>${newtons-cradle.version}</version>
+                <scope>test</scope>
+            </dependency>            
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>isaac-metadata-artifacts</artifactId>
+                <version>${isaac-metadata.version}</version>
+            </dependency>            
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>isaac-metadata-coordinates</artifactId>
+                <version>${isaac-metadata.version}</version>
+            </dependency>            
+        </dependencies>
+    </dependencyManagement>
+    <modules>
+        <module>logic</module>
+        <module>logic-integration-tests</module>
+        <module>logic-mojo</module>
+    </modules>
+</project>
