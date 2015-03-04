@@ -1,6 +1,6 @@
 package gov.vha.isaac.logic;
 
-import gov.vha.isaac.ochre.api.graph.GraphVisitData;
+import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import org.junit.Test;
 
 /**
@@ -43,7 +43,7 @@ public class DLGraphTest {
                 g.SufficientSet(g.And(g.Concept(defParentConceptSequence1), g.Concept(defParentConceptSequence2)))
         );
 
-        g.processDepthFirst((Node node, GraphVisitData graphVisitData) -> {
+        g.processDepthFirst((Node node, TreeNodeVisitData graphVisitData) -> {
             for (int i = 0; i < graphVisitData.getDistance(node.getNodeIndex()); i++) {
                 System.out.print("  ");
             }

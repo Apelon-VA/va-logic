@@ -14,13 +14,11 @@ import gov.vha.isaac.logic.node.external.TemplateNodeWithUuids;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
-import gov.vha.isaac.ochre.api.graph.GraphVisitData;
+import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.apache.mahout.math.set.OpenIntHashSet;
 import org.ihtsdo.otf.tcc.api.conattr.ConceptAttributeVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 
 import java.io.ByteArrayInputStream;
@@ -302,14 +300,14 @@ public class LogicGraph {
         nodes.add(node);
     }
 
-    public void processDepthFirst(BiConsumer<Node, GraphVisitData> consumer) {
+    public void processDepthFirst(BiConsumer<Node, TreeNodeVisitData> consumer) {
         init();
-        GraphVisitData graphVisitData = new GraphVisitData(nodes.size());
+        TreeNodeVisitData graphVisitData = new TreeNodeVisitData(nodes.size());
         depthFirstVisit(consumer, getRoot(), graphVisitData, 0);
     }
 
-    private void depthFirstVisit(BiConsumer<Node, GraphVisitData> consumer, Node node,
-            GraphVisitData graphVisitData, int depth) {
+    private void depthFirstVisit(BiConsumer<Node, TreeNodeVisitData> consumer, Node node,
+            TreeNodeVisitData graphVisitData, int depth) {
 
         if (depth > 100) {
             System.out.println("Depth limit exceeded for node: " + node);
@@ -527,7 +525,7 @@ public class LogicGraph {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        processDepthFirst((Node node, GraphVisitData graphVisitData) -> {
+        processDepthFirst((Node node, TreeNodeVisitData graphVisitData) -> {
             for (int i = 0; i < graphVisitData.getDistance(node.getNodeIndex()); i++) {
                 builder.append("    ");
             }
@@ -555,7 +553,7 @@ public class LogicGraph {
             if (this.nodes.size() != other.nodes.size()) {
                 return false;
             }
-            GraphVisitData graphVisitData = new GraphVisitData(nodes.size());
+            TreeNodeVisitData graphVisitData = new TreeNodeVisitData(nodes.size());
             depthFirstVisit(null, getRoot(), graphVisitData, 0);
 
             return graphsEqual(this.getRoot(), other.getRoot(), 0, graphVisitData.getMaxDepth());
@@ -564,7 +562,7 @@ public class LogicGraph {
     }
 
     public int[] maximalCommonSubgraph(LogicGraph another) {
-        GraphVisitData graphVisitData = new GraphVisitData(nodes.size());
+        TreeNodeVisitData graphVisitData = new TreeNodeVisitData(nodes.size());
         depthFirstVisit(null, getRoot(), graphVisitData, 0);
         int[] solution = new int[this.nodes.size()];
         Arrays.fill(solution, -1);

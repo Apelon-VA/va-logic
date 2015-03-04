@@ -4,11 +4,12 @@
   <parent>
     <groupId>gov.vha.isaac</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
   </parent>
   <groupId>gov.vha.isaac</groupId>
   <artifactId>logic-mojo</artifactId>
-  <version>1.0</version>
+  <packaging>maven-plugin</packaging>
+  <version>1.1</version>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>
   <url>http://maven.apache.org</url>
   <properties>
@@ -16,9 +17,35 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <version>3.3</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>3.2.5</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tcc-model-impl</artifactId>
+      <version>${ochre.version}</version>
+      <type>jar</type>
     </dependency>
   </dependencies>
-</project>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-plugin-plugin</artifactId>
+        <version>3.3</version>
+        <!--                <configuration>
+                            <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+                        </configuration>-->
+        <configuration>
+          <goalPrefix>tcc-mojo</goalPrefix>
+          <!--          <outputDirectory>target/dir</outputDirectory>-->
+        </configuration>
+      </plugin>
+    </plugins>
+  </build></project>
