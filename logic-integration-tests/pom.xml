@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>logic-parent</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <version>1.1</version>
     </parent>
     <artifactId>logic-integration-tests</artifactId>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>
