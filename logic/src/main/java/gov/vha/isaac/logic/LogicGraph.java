@@ -41,7 +41,10 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
  */
 public class LogicGraph {
 
-    private static NodeSemantic[] NODE_SEMANTICS = NodeSemantic.values();
+    private static final NodeSemantic[] NODE_SEMANTICS = NodeSemantic.values();
+    
+    private static final EnumSet<NodeSemantic> meaningfulNodeSemantics
+            = EnumSet.of(NodeSemantic.CONCEPT, NodeSemantic.SUBSTITUTION_CONCEPT);
 
     protected static int isaNid = 0;
     
@@ -186,17 +189,6 @@ public class LogicGraph {
         }
     }
 
-    private static EnumSet<NodeSemantic> meaningfulNodeSemantics
-            = EnumSet.of(NodeSemantic.CONCEPT, NodeSemantic.SUBSTITUTION_CONCEPT);
-
-    public boolean isMeaningful() {
-        return nodes.stream().anyMatch((node) -> (meaningfulNodeSemantics.contains(node.getNodeSemantic())));
-    }
-
-    public int getConceptSequence() {
-        return conceptSequence;
-    }
-
     public LogicGraph(ConceptVersionBI conceptVersion,
             OpenIntHashSet roleConceptSequences,
             OpenIntHashSet featureConceptSequences,
@@ -259,12 +251,16 @@ public class LogicGraph {
 
     private static void setupIsa() {
         if (isaNid == 0) {
-            try {
-                isaNid = IsaacMetadataAuxiliaryBinding.IS_A.getNid();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            isaNid = IsaacMetadataAuxiliaryBinding.IS_A.getNid();
         }
+    }
+
+    public boolean isMeaningful() {
+        return nodes.stream().anyMatch((node) -> (meaningfulNodeSemantics.contains(node.getNodeSemantic())));
+    }
+
+    public int getConceptSequence() {
+        return conceptSequence;
     }
 
     public int getNodeCount() {
