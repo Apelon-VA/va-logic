@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import javafx.concurrent.Task;
 import javafx.embed.swing.JFXPanel;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.mahout.math.set.OpenIntHashSet;
@@ -130,8 +129,12 @@ public class LogicIntegrationTests {
                 .subscribe(tick -> {
                     Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
                     taskSet.stream().forEach((task) -> {
-                        log.printf(Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
-                                task.getTitle(), task.getMessage(), task.getProgress() * 100);
+                        double percentProgress = task.getProgress() * 100;
+                        if (percentProgress < 0) {
+                            percentProgress = 0;
+                        }
+                        log.printf(org.apache.logging.log4j.Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
+                                task.getTitle(), task.getMessage(), percentProgress);
                     });
                 });
     }

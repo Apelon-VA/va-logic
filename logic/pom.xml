@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>logic-parent</artifactId>
-        <version>1.1</version>
+        <version>1.2</version>
     </parent>
     <artifactId>logic</artifactId>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>
@@ -30,5 +30,33 @@
             <groupId>au.csiro</groupId>
             <artifactId>snorocket-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>newtons-cradle</artifactId>
+             <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>isaac-metadata-coordinates</artifactId>
+        </dependency>  
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.glassfish.hk2</groupId>
+                <artifactId>hk2-inhabitant-generator</artifactId>
+                <version>${hk2.version}</version>
+<!--                <configuration>
+                    <verbose>true</verbose>
+                </configuration>-->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate-inhabitants</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
