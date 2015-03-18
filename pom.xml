@@ -11,9 +11,9 @@
     <name>${project.artifactId}: (MMP)</name>
     <packaging>pom</packaging>
     <properties>
-        <ochre.version>2.16</ochre.version>
-        <isaac-metadata.version>1.18</isaac-metadata.version>
-        <newtons-cradle.version>1.6</newtons-cradle.version>
+        <ochre.version>2.17</ochre.version>
+        <isaac-metadata.version>1.19</isaac-metadata.version>
+        <newtons-cradle.version>1.7</newtons-cradle.version>
         <snorocket-core.version>2.5.7</snorocket-core.version>
    </properties>
     <dependencyManagement>
