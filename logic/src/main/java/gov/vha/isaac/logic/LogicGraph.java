@@ -15,6 +15,7 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.apache.mahout.math.set.OpenIntHashSet;
 import org.ihtsdo.otf.tcc.api.conattr.ConceptAttributeVersionBI;
@@ -190,9 +191,9 @@ public class LogicGraph {
     }
 
     public LogicGraph(ConceptVersionBI conceptVersion,
-            OpenIntHashSet roleConceptSequences,
-            OpenIntHashSet featureConceptSequences,
-            OpenIntHashSet neverRoleGroupConceptSequences,
+            ConceptSequenceSet roleConceptSequences,
+            ConceptSequenceSet featureConceptSequences,
+            ConceptSequenceSet neverRoleGroupConceptSequences,
             int roleGroupNid) throws IOException, ContradictionException {
         setupIsa();
         RelAssertionType relAssertionType = conceptVersion.getViewCoordinate().getRelationshipAssertionType();
