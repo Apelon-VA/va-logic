@@ -29,6 +29,7 @@ import gov.vha.isaac.ochre.api.TaxonomyProvider;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -255,8 +256,8 @@ public class LogicIntegrationTests {
 
     private void classify(CradleExtensions mapDbService, HashTreeWithBitSets g) throws IOException, ContradictionException, PropertyVetoException {
         log.info("  Start classify.");
-        BitSet conceptsToClassify = g.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(Taxonomies.SNOMED.getNid()));
-        log.info("   Concepts to classify: " + conceptsToClassify.cardinality());
+        ConceptSequenceSet conceptsToClassify = g.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(Taxonomies.SNOMED.getNid()));
+        log.info("   Concepts to classify: " + conceptsToClassify.size());
 
         AtomicInteger logicGraphMembers = new AtomicInteger();
         AtomicInteger rejectedLogicGraphMembers = new AtomicInteger();
@@ -273,7 +274,7 @@ public class LogicIntegrationTests {
 
         // get refset members as a parallel stream?
         for (RefexChronicleBI<?> sememe : concept.getRefsetMembers()) {
-            if (conceptsToClassify.get(getSequenceProvider().getConceptSequence(sememe.getReferencedComponentNid()))) {
+            if (conceptsToClassify.contains(getSequenceProvider().getConceptSequence(sememe.getReferencedComponentNid()))) {
                 ArrayOfByteArrayMember logicSememe = (ArrayOfByteArrayMember) sememe;
                 ArrayOfByteArrayMemberVersion logicGraphSememe = (ArrayOfByteArrayMemberVersion) logicSememe.getVersion(viewCoordinate);
                 graphToAxiomTranslator.translate(logicGraphSememe);
@@ -365,14 +366,14 @@ public class LogicIntegrationTests {
         ConceptSpec author = new ConceptSpec("user", "f7495b58-6630-3499-a44e-2052b5fcf06c");
         int tempAuthorNid = author.getNid();
 
-        OpenIntHashSet roleConceptSequences = new OpenIntHashSet();
-        BitSet roleConceptSequencesArray = g.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
+        ConceptSequenceSet roleConceptSequences = new ConceptSequenceSet();
+        ConceptSequenceSet roleConceptSequencesArray = g.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
         roleConceptSequencesArray.stream().forEach(roleConceptSequence -> {
             roleConceptSequences.add(roleConceptSequence);
         });
-        OpenIntHashSet featureConceptSequences = new OpenIntHashSet(); //empty set for now.
+        ConceptSequenceSet featureConceptSequences = new ConceptSequenceSet(); //empty set for now.
 
-        OpenIntHashSet neverRoleGroupConceptSequences = new OpenIntHashSet();
+        ConceptSequenceSet neverRoleGroupConceptSequences = new ConceptSequenceSet();
         neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.PART_OF.getNid()));
         neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.LATERALITY.getNid()));
         neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.HAS_ACTIVE_INGREDIENT.getNid()));

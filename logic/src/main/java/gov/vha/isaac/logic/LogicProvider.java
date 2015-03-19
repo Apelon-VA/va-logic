@@ -25,6 +25,7 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyService;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.logic.axioms.GraphToAxiomTranslator;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
 import gov.vha.isaac.ochre.api.LookupService;
@@ -33,6 +34,7 @@ import gov.vha.isaac.ochre.api.TaxonomyProvider;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.time.Duration;
@@ -115,195 +117,217 @@ public class LogicProvider implements LogicService {
             log.info("  Start to make graph.");
             Instant collectStart = Instant.now();
             IntStream conceptSequenceStream = getSequenceProvider().getParallelConceptSequenceStream();
-            log.info("  conceptSequenceStream count 1:" + conceptSequenceStream.count());
-            conceptSequenceStream = getSequenceProvider().getParallelConceptSequenceStream();
-            log.info("  conceptSequenceStream count 2:" + conceptSequenceStream.count());
-            conceptSequenceStream = getSequenceProvider().getParallelConceptSequenceStream();
-            log.info("  conceptSequenceStream distinct count :" + conceptSequenceStream.distinct().count());
-            conceptSequenceStream = getSequenceProvider().getConceptSequenceStream();
             GraphCollector collector = new GraphCollector(((TaxonomyService) getTaxonomyProvider()).getOriginDestinationTaxonomyRecords(),
                     ViewCoordinates.getDevelopmentStatedLatest());
             HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
                     HashTreeBuilder::new,
                     collector,
                     collector);
-            HashTreeWithBitSets resultGraph = graphBuilder.getSimpleDirectedGraphGraph();
+            HashTreeWithBitSets statedTree = graphBuilder.getSimpleDirectedGraphGraph();
             Instant collectEnd = Instant.now();
             Duration collectDuration = Duration.between(collectStart, collectEnd);
-            log.info("  Finished making graph: " + resultGraph);
+            log.info("  Finished making graph: " + statedTree);
             log.info("  Generation duration: " + collectDuration);
 
-            log.info("  Start makeDlGraph.");
-            collectStart = Instant.now();
-            ViewCoordinate developmentStatedLatest = ViewCoordinates.getDevelopmentStatedLatest();
-            AtomicInteger logicGraphMembers = new AtomicInteger();
-            AtomicInteger logicGraphVersions = new AtomicInteger();
-            AtomicInteger maxGraphVersionsPerMember = new AtomicInteger();
+           
+            ConceptSpec roleGroup = IsaacMetadataAuxiliaryBinding.ROLE_GROUP;
+            ConceptSpec roleRoot = IsaacMetadataAuxiliaryBinding.ROLE;
+            ConceptSpec featureRoot = IsaacMetadataAuxiliaryBinding.FEATURE;
+            ConceptSpec moduleSpec = IsaacMetadataAuxiliaryBinding.MODULE;
+            ConceptSpec authorSpec = IsaacMetadataAuxiliaryBinding.USER;
 
-            // Figure out why role group is missing from current database, or is it a problem with the map...
-            ConceptSpec tempRoleGroup = new ConceptSpec("Linkage concept", "1a3399bc-e6b5-3dea-8058-4e08012ff00f");
-            ConceptSpec roleRoot = new ConceptSpec("Concept model attribute (attribute)", "6155818b-09ed-388e-82ce-caa143423e99");
-            resultGraph.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
+            ConceptSequenceSet roleConceptSequences = statedTree.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
 
-            ConceptSpec tempDefinitionRefex = new ConceptSpec("Defining relationship", "e607218d-7027-3058-ae5f-0d4ccd148fd0");
-            int tempDefinitionRefexNid = tempDefinitionRefex.getNid();
+            ConceptSequenceSet featureConceptSequences = statedTree.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(featureRoot.getNid()));
 
-            ConceptSpec tempModule = new ConceptSpec("Module", "40d1c869-b509-32f8-b735-836eac577a67");
-            int tempModuleNid = tempModule.getNid();
-
-            ConceptSpec author = new ConceptSpec("user", "f7495b58-6630-3499-a44e-2052b5fcf06c");
-            int tempAuthorNid = author.getNid();
-
-            OpenIntHashSet roleConceptSequences = new OpenIntHashSet();
-            BitSet roleConceptSequencesArray = resultGraph.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
-            roleConceptSequencesArray.stream().forEach(roleConceptSequence -> {
-                roleConceptSequences.add(roleConceptSequence);
-            });
-            OpenIntHashSet featureConceptSequences = new OpenIntHashSet(); //empty set for now.
-
-            OpenIntHashSet neverRoleGroupConceptSequences = new OpenIntHashSet();
+            ConceptSequenceSet neverRoleGroupConceptSequences = new ConceptSequenceSet();
             neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.PART_OF.getNid()));
             neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.LATERALITY.getNid()));
             neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.HAS_ACTIVE_INGREDIENT.getNid()));
             neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.HAS_DOSE_FORM.getNid()));
+            
+           //------------
+            makeGraphs(cradleService,
+                    ViewCoordinates.getDevelopmentStatedLatest(), 
+                    roleGroup, 
+                    IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM, 
+                    moduleSpec, 
+                    authorSpec, 
+                    roleConceptSequences, 
+                    featureConceptSequences, 
+                    neverRoleGroupConceptSequences);
+            makeGraphs(cradleService,
+                    ViewCoordinates.getDevelopmentInferredLatest(), 
+                    roleGroup, 
+                    IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_INFERRED_FORM, 
+                    moduleSpec, 
+                    authorSpec, 
+                    roleConceptSequences, 
+                    featureConceptSequences, 
+                    neverRoleGroupConceptSequences);
+        } catch (IOException ex) {
+            log.error(ex.getLocalizedMessage(), ex);
+        }
+    }
 
-            int roleGroupNid = tempRoleGroup.getNid();
-
-            AtomicInteger maxGraphSize = new AtomicInteger(0);
-
-            cradleService.getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager conceptChronicleDataEager) -> {
-                try {
-                    ConceptChronicle conceptChronicle = ConceptChronicle.get(conceptChronicleDataEager.getNid(), conceptChronicleDataEager);
-
-                    logicGraphMembers.incrementAndGet();
-                    ArrayOfByteArrayMember logicGraphMember = null;
-                    LogicGraph lastLogicGraph = null;
-                    for (Position position : conceptChronicle.getPositions()) {
-                        ViewCoordinate vcForPosition = new ViewCoordinate(UUID.randomUUID(),
-                                "vc for position", developmentStatedLatest);
-                        vcForPosition.setViewPosition(position);
-                        ConceptVersion conceptVersion = conceptChronicle.getVersion(vcForPosition);
-                        if (conceptVersion.isActive()) {
-                            try {
-
-                                LogicGraph logicGraph = new LogicGraph(conceptVersion,
+    private void makeGraphs(
+            CradleExtensions cradleService, 
+            ViewCoordinate viewForLogicGraph, 
+            ConceptSpec roleGroup, 
+            ConceptSpec statedDefinitionRefex, 
+            ConceptSpec moduleSpec, 
+            ConceptSpec authorSpec, 
+            ConceptSequenceSet roleConceptSequences, 
+            ConceptSequenceSet featureConceptSequences, 
+            ConceptSequenceSet neverRoleGroupConceptSequences) {
+        log.info("  Start makeDlGraph: " + viewForLogicGraph.getRelationshipAssertionType());
+        Instant collectStart = Instant.now();
+        Instant collectEnd;
+        Duration collectDuration;
+        AtomicInteger logicGraphMembers = new AtomicInteger();
+        AtomicInteger logicGraphVersions = new AtomicInteger();
+        AtomicInteger maxGraphVersionsPerMember = new AtomicInteger();
+        int roleGroupNid = roleGroup.getNid();
+        int definitionRefexNid = statedDefinitionRefex.getNid();
+        int moduleNid = moduleSpec.getNid();
+        int authorNid = authorSpec.getNid();
+        AtomicInteger maxGraphSize = new AtomicInteger(0);
+        cradleService.getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager conceptChronicleDataEager) -> {
+            try {
+                ConceptChronicle conceptChronicle = ConceptChronicle.get(conceptChronicleDataEager.getNid(), conceptChronicleDataEager);
+                
+                logicGraphMembers.incrementAndGet();
+                ArrayOfByteArrayMember logicGraphMember = null;
+                LogicGraph lastLogicGraph = null;
+                for (Position position : conceptChronicle.getPositions()) {
+                    ViewCoordinate vcForPosition = new ViewCoordinate(UUID.randomUUID(),
+                            "vc for position", viewForLogicGraph);
+                    vcForPosition.setViewPosition(position);
+                    ConceptVersion conceptVersion = conceptChronicle.getVersion(vcForPosition);
+                    if (conceptVersion.isActive()) {
+                        try {
+                            
+                            LogicGraph logicGraph = new LogicGraph(conceptVersion,
+                                    roleConceptSequences,
+                                    featureConceptSequences,
+                                    neverRoleGroupConceptSequences,
+                                    roleGroupNid);
+                            if (!logicGraph.isMeaningful()) {
+                                vcForPosition.setRelationshipAssertionType(RelAssertionType.INFERRED);
+                                conceptVersion = conceptChronicle.getVersion(vcForPosition);
+                                logicGraph = new LogicGraph(conceptVersion,
                                         roleConceptSequences,
                                         featureConceptSequences,
                                         neverRoleGroupConceptSequences,
                                         roleGroupNid);
-                                if (!logicGraph.isMeaningful()) {
-                                    vcForPosition.setRelationshipAssertionType(RelAssertionType.INFERRED);
-                                    conceptVersion = conceptChronicle.getVersion(vcForPosition);
-                                    logicGraph = new LogicGraph(conceptVersion,
-                                            roleConceptSequences,
-                                            featureConceptSequences,
-                                            neverRoleGroupConceptSequences,
-                                            roleGroupNid);
-                                }
-                                if (logicGraph.isMeaningful()) {
-                                    byte[][] logicGraphBytes = logicGraph.pack(DataTarget.INTERNAL);
-                                    int graphNodeCount = logicGraphBytes.length;
-                                    if (graphNodeCount > maxGraphSize.get()) {
-                                        StringBuilder builder = new StringBuilder();
-                                        printGraph(builder, "\n Make dl graph for: ", conceptChronicle, maxGraphSize, graphNodeCount, logicGraph);
-                                        System.out.println(builder.toString());
-                                    }
-
-                                    if (logicGraphMember == null) {
-                                        logicGraphVersions.incrementAndGet();
-                                        logicGraphMember = new ArrayOfByteArrayMember();
-                                        UUID primordialUuid = UUID.randomUUID();
-                                        logicGraphMember.setPrimordialUuid(primordialUuid);
-                                        logicGraphMember.setNid(cradleService.getNidForUuids(primordialUuid));
-                                        logicGraphMember.setArrayOfByteArray(logicGraphBytes);
-                                        logicGraphMember.setAssemblageNid(tempDefinitionRefexNid);
-                                        logicGraphMember.setReferencedComponentNid(conceptChronicle.getNid());
-                                        logicGraphMember.setSTAMP(cradleService.getStamp(
-                                                Status.ACTIVE, vcForPosition.getViewPosition().getTime(),
-                                                tempAuthorNid,
-                                                tempModuleNid,
-                                                position.getPath().getConceptNid()));
-                                        logicGraphMember.enclosingConceptNid = tempDefinitionRefexNid;
-                                        cradleService.setConceptNidForNid(tempDefinitionRefexNid, logicGraphMember.getNid());
-
-                                    } else if (!logicGraph.equals(lastLogicGraph)) {
-                                        logicGraphVersions.incrementAndGet();
-                                        ArrayOfByteArrayRevision lgr = new ArrayOfByteArrayRevision();
-                                        lgr.setArrayOfByteArray(logicGraphBytes);
-                                        lgr.setStatusAtPosition(
-                                                Status.ACTIVE,
-                                                position.getTime(),
-                                                tempAuthorNid,
-                                                tempModuleNid,
-                                                position.getPath().getConceptNid());
-                                        logicGraphMember.addRevision(lgr);
-                                    }
-                                    lastLogicGraph = logicGraph;
-                                }
-
-                            } catch (IllegalStateException ex) {
-                                ex.printStackTrace();
                             }
+                            if (logicGraph.isMeaningful()) {
+                                byte[][] logicGraphBytes = logicGraph.pack(DataTarget.INTERNAL);
+                                int graphNodeCount = logicGraphBytes.length;
+                                printIfMoreNodes(graphNodeCount, maxGraphSize, conceptChronicle, logicGraph);
+                                
+                                if (logicGraphMember == null) {
+                                    logicGraphVersions.incrementAndGet();
+                                    logicGraphMember = new ArrayOfByteArrayMember();
+                                    UUID primordialUuid = UUID.randomUUID();
+                                    logicGraphMember.setPrimordialUuid(primordialUuid);
+                                    logicGraphMember.setNid(cradleService.getNidForUuids(primordialUuid));
+                                    logicGraphMember.setArrayOfByteArray(logicGraphBytes);
+                                    logicGraphMember.setAssemblageNid(definitionRefexNid);
+                                    logicGraphMember.setReferencedComponentNid(conceptChronicle.getNid());
+                                    logicGraphMember.setSTAMP(cradleService.getStamp(Status.ACTIVE, vcForPosition.getViewPosition().getTime(),
+                                            authorNid,
+                                            moduleNid,
+                                            position.getPath().getConceptNid()));
+                                    logicGraphMember.enclosingConceptNid = definitionRefexNid;
+                                    cradleService.setConceptNidForNid(definitionRefexNid, logicGraphMember.getNid());
+                                    
+                                } else if (!logicGraph.equals(lastLogicGraph)) {
+                                    logicGraphVersions.incrementAndGet();
+                                    ArrayOfByteArrayRevision lgr = new ArrayOfByteArrayRevision();
+                                    lgr.setArrayOfByteArray(logicGraphBytes);
+                                    lgr.setStatusAtPosition(Status.ACTIVE,
+                                            position.getTime(),
+                                            authorNid,
+                                            moduleNid,
+                                            position.getPath().getConceptNid());
+                                    logicGraphMember.addRevision(lgr);
+                                }
+                                lastLogicGraph = logicGraph;
+                            }
+                            
+                        } catch (IllegalStateException ex) {
+                            throw new RuntimeException(ex);
                         }
                     }
-                    if (logicGraphMember != null) {
-                        cradleService.writeSememe(logicGraphMember);
-                        if (logicGraphMember.revisions != null) {
-                            int versionCount = logicGraphMember.revisions.size() + 1;
-                            if (versionCount > maxGraphVersionsPerMember.get()) {
-                                maxGraphVersionsPerMember.set(versionCount);
-                                StringBuilder builder = new StringBuilder();
-                                builder.append("Encountered logic definition with ").append(versionCount).append(" versions:\n\n");
-                                int version = 0;
-                                LogicGraph previousVersion = null;
-                                for (ArrayOfByteArrayMemberVersion lgmv : logicGraphMember.getVersions()) {
-                                    LogicGraph lg = new LogicGraph(lgmv.getArrayOfByteArray(), DataSource.INTERNAL,
-                                            getSequenceProvider().getConceptSequence(lgmv.getReferencedComponentNid()));
-                                    printGraph(builder, "Version " + version++ + " stamp: " + Stamp.stampFromIntStamp(lgmv.getStamp()).toString() + "\n ",
-                                            conceptChronicle, maxGraphSize, lg.getNodeCount(), lg);
-                                    if (previousVersion != null) {
-                                        int[] solution1 = lg.maximalCommonSubgraph(previousVersion);
-                                        int[] solution2 = previousVersion.maximalCommonSubgraph(lg);
-                                        builder.append("Solution this to previous: [");
-                                        for (int i = 0; i < solution1.length; i++) {
-                                            if (solution1[i] != -1) {
-                                                builder.append("(");
-                                                builder.append(i);
-                                                builder.append("->");
-                                                builder.append(solution1[i]);
-                                                builder.append(")");
-                                            }
-                                        }
-                                        builder.append("]\nSolution previous to this: [");
-                                        for (int i = 0; i < solution2.length; i++) {
-                                            if (solution2[i] != -1) {
-                                                builder.append("(");
-                                                builder.append(i);
-                                                builder.append("<-");
-                                                builder.append(solution2[i]);
-                                                builder.append(")");
-                                            }
-                                        }
-                                        builder.append("]\n");
-                                    }
-                                    previousVersion = lg;
-                                }
-                                System.out.println(builder.toString());
-
-                            }
-                        }
-                    }
-                } catch (PropertyVetoException | IOException | ContradictionException e) {
-                    throw new RuntimeException(e);
                 }
-            });
-            collectEnd = Instant.now();
-            collectDuration = Duration.between(collectStart, collectEnd);
-            log.info("  Finished makeDlGraph. Member count: " + logicGraphMembers
+                if (logicGraphMember != null) {
+                    cradleService.writeSememe(logicGraphMember);
+                    printIfMoreRevisions(logicGraphMember, maxGraphVersionsPerMember, conceptChronicle, maxGraphSize);
+                }
+            } catch (PropertyVetoException | IOException | ContradictionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        collectEnd = Instant.now();
+        collectDuration = Duration.between(collectStart, collectEnd);
+        log.info("  Finished makeDlGraph. Member count: " + logicGraphMembers
                     + " Version count: " + logicGraphVersions);
-            log.info("  Collection duration: " + collectDuration);
-        } catch (IOException ex) {
-            log.error(ex.getLocalizedMessage(), ex);
+        log.info("  Collection duration: " + collectDuration);
+    }
+
+    public void printIfMoreNodes(int graphNodeCount, AtomicInteger maxGraphSize, ConceptChronicle conceptChronicle, LogicGraph logicGraph) {
+        if (graphNodeCount > maxGraphSize.get()) {
+            StringBuilder builder = new StringBuilder();
+            printGraph(builder, "\n Make dl graph for: ", conceptChronicle, maxGraphSize, graphNodeCount, logicGraph);
+            System.out.println(builder.toString());
+        }
+    }
+
+    public void printIfMoreRevisions(ArrayOfByteArrayMember logicGraphMember, AtomicInteger maxGraphVersionsPerMember, ConceptChronicle conceptChronicle, AtomicInteger maxGraphSize) {
+        if (logicGraphMember.revisions != null) {
+            int versionCount = logicGraphMember.revisions.size() + 1;
+            if (versionCount > maxGraphVersionsPerMember.get()) {
+                maxGraphVersionsPerMember.set(versionCount);
+                StringBuilder builder = new StringBuilder();
+                builder.append("Encountered logic definition with ").append(versionCount).append(" versions:\n\n");
+                int version = 0;
+                LogicGraph previousVersion = null;
+                for (ArrayOfByteArrayMemberVersion lgmv : logicGraphMember.getVersions()) {
+                    LogicGraph lg = new LogicGraph(lgmv.getArrayOfByteArray(), DataSource.INTERNAL,
+                            getSequenceProvider().getConceptSequence(lgmv.getReferencedComponentNid()));
+                    printGraph(builder, "Version " + version++ + " stamp: " + Stamp.stampFromIntStamp(lgmv.getStamp()).toString() + "\n ",
+                            conceptChronicle, maxGraphSize, lg.getNodeCount(), lg);
+                    if (previousVersion != null) {
+                        int[] solution1 = lg.maximalCommonSubgraph(previousVersion);
+                        int[] solution2 = previousVersion.maximalCommonSubgraph(lg);
+                        builder.append("Solution this to previous: [");
+                        for (int i = 0; i < solution1.length; i++) {
+                            if (solution1[i] != -1) {
+                                builder.append("(");
+                                builder.append(i);
+                                builder.append("->");
+                                builder.append(solution1[i]);
+                                builder.append(")");
+                            }
+                        }
+                        builder.append("]\nSolution previous to this: [");
+                        for (int i = 0; i < solution2.length; i++) {
+                            if (solution2[i] != -1) {
+                                builder.append("(");
+                                builder.append(i);
+                                builder.append("<-");
+                                builder.append(solution2[i]);
+                                builder.append(")");
+                            }
+                        }
+                        builder.append("]\n");
+                    }
+                    previousVersion = lg;
+                }
+                System.out.println(builder.toString());
+                
+            }
         }
     }
 
@@ -331,8 +355,8 @@ public class LogicProvider implements LogicService {
             log.info("  Finished making graph: " + resultGraph);
             log.info("  Generation duration: " + collectDuration);
             log.info("  Start classify.");
-            BitSet conceptsToClassify = resultGraph.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(Taxonomies.SNOMED.getNid()));
-            log.info("   Concepts to classify: " + conceptsToClassify.cardinality());
+            ConceptSequenceSet conceptsToClassify = resultGraph.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(Taxonomies.SNOMED.getNid()));
+            log.info("   Concepts to classify: " + conceptsToClassify.size());
 
             AtomicInteger logicGraphMembers = new AtomicInteger();
             AtomicInteger rejectedLogicGraphMembers = new AtomicInteger();
@@ -348,7 +372,7 @@ public class LogicProvider implements LogicService {
 
             // get refset members as a parallel stream?
             for (RefexChronicleBI<?> sememe : concept.getRefsetMembers()) {
-                if (conceptsToClassify.get(getSequenceProvider().getConceptSequence(sememe.getReferencedComponentNid()))) {
+                if (conceptsToClassify.contains(getSequenceProvider().getConceptSequence(sememe.getReferencedComponentNid()))) {
                     ArrayOfByteArrayMember logicSememe = (ArrayOfByteArrayMember) sememe;
                     ArrayOfByteArrayMemberVersion logicGraphSememe = (ArrayOfByteArrayMemberVersion) logicSememe.getVersion(viewCoordinate);
                     graphToAxiomTranslator.translate(logicGraphSememe);
