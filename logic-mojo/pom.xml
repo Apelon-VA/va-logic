@@ -4,12 +4,12 @@
   <parent>
     <groupId>gov.vha.isaac</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.5-SNAPSHOT</version>
+    <version>1.4</version>
   </parent>
   <groupId>gov.vha.isaac</groupId>
   <artifactId>logic-mojo</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.4</version>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>
   <url>http://maven.apache.org</url>
   <properties>
