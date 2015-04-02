@@ -32,7 +32,7 @@ import gov.vha.isaac.logic.node.internal.RoleNodeSomeWithNids;
 import gov.vha.isaac.logic.node.RootNode;
 import gov.vha.isaac.logic.node.SufficientSetNode;
 import gov.vha.isaac.ochre.api.DataSource;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.SequenceService;
 import gov.vha.isaac.ochre.collections.ConcurrentSequenceObjectMap;
 import java.util.Calendar;
 import java.util.Optional;
@@ -53,7 +53,7 @@ public class GraphToAxiomTranslator {
     ConcurrentHashMap<Integer, Role> sequenceLogicRoleMap = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Feature> sequenceLogicFeatureMap = new ConcurrentHashMap<>();
     Factory f = new Factory();
-    private static final SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+    private static final SequenceService sequenceProvider = Hk2Looker.getService(SequenceService.class);
 
     private Concept getConcept(int name) {
         if (name < 0) {

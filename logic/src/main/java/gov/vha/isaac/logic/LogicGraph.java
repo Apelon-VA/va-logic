@@ -17,7 +17,6 @@ import gov.vha.isaac.ochre.api.DataTarget;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
-import org.apache.mahout.math.set.OpenIntHashSet;
 import org.ihtsdo.otf.tcc.api.conattr.ConceptAttributeVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
@@ -35,10 +34,17 @@ import org.ihtsdo.otf.tcc.api.store.TerminologyStoreDI;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
- * Created by kec on 12/6/14. TODO need version of Pack that uses UUIDs for
- * change sets TODO need unique way of identifying data columns for
- * substitution: Use enumerations for now TODO Standard refset for never grouped
- * roles TODO Standard refset for right identities
+ * Created by kec on 12/6/14. 
+ * 
+ * TODO need version of Pack that uses UUIDs for
+ * change sets 
+ * 
+ * TODO need unique way of identifying data columns for
+ * substitution: Use enumerations for now 
+ * 
+ * TODO Standard refset for never grouped roles 
+ * 
+ * TODO Standard refset for right identities
  */
 public class LogicGraph {
 
