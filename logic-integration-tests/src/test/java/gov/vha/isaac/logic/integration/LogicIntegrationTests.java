@@ -12,8 +12,8 @@ import au.csiro.ontology.model.Concept;
 import au.csiro.snorocket.core.SnorocketReasoner;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
-import gov.vha.isaac.cradle.sequence.SequenceService;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyService;
+import gov.vha.isaac.cradle.sequence.SequenceProvider;
+import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.Node;
@@ -24,8 +24,8 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
-import gov.vha.isaac.ochre.api.TaxonomyProvider;
+import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
@@ -84,15 +84,15 @@ import org.testng.annotations.Test;
 public class LogicIntegrationTests {
 
     private static final Logger log = LogManager.getLogger();
-    private static SequenceService sequenceProvider;
-    private static TaxonomyProvider taxonomyProvider;
+    private static SequenceProvider sequenceProvider;
+    private static TaxonomyService taxonomyProvider;
 
     /**
      * @return the sequenceProvider
      */
-    public static SequenceService getSequenceProvider() {
+    public static SequenceProvider getSequenceService() {
         if (sequenceProvider == null) {
-            sequenceProvider = LookupService.getService(SequenceService.class);
+            sequenceProvider = LookupService.getService(SequenceProvider.class);
         }
         return sequenceProvider;
     }
@@ -100,9 +100,9 @@ public class LogicIntegrationTests {
     /**
      * @return the taxonomyProvider
      */
-    public static TaxonomyProvider getTaxonomyProvider() {
+    public static TaxonomyService getTaxonomyService() {
         if (taxonomyProvider == null) {
-            taxonomyProvider = LookupService.getService(TaxonomyProvider.class);
+            taxonomyProvider = LookupService.getService(TaxonomyService.class);
         }
         return taxonomyProvider;
     }
@@ -154,7 +154,7 @@ public class LogicIntegrationTests {
     public void testLoad() throws Exception {
 
         log.info("  Testing load...");
-        ObjectChronicleTaskServer tts = Hk2Looker.get().getService(ObjectChronicleTaskServer.class);
+        ObjectChronicleTaskService tts = Hk2Looker.get().getService(ObjectChronicleTaskService.class);
         PersistentStoreI ps = Hk2Looker.get().getService(PersistentStoreI.class);
 
         String mapDbFolder = System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY);
@@ -179,7 +179,7 @@ public class LogicIntegrationTests {
         exportLogicGraphDatabase(tts);
     }
     
-    private void exportDatabase(ObjectChronicleTaskServer tts) throws InterruptedException, ExecutionException {
+    private void exportDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException {
         Path logicExportFile = Paths.get("target/logicExportFile.econ");
         Instant start = Instant.now();
         Task<Integer> exportTask = tts.startExportTask(logicExportFile);
@@ -192,7 +192,7 @@ public class LogicIntegrationTests {
         double nsPerConcept = 1.0d * duration.toNanos() / conceptCount;
         log.info("  nsPerConcept: {}", nsPerConcept);
     }
-   private void exportLogicGraphDatabase(ObjectChronicleTaskServer tts) throws InterruptedException, ExecutionException {
+   private void exportLogicGraphDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException {
         Path logicExportFile = Paths.get("target/logicGraphExportFile.econ");
         Instant start = Instant.now();
         Task<Integer> exportTask = tts.startLogicGraphExportTask(logicExportFile);
@@ -206,7 +206,7 @@ public class LogicIntegrationTests {
         log.info("  nsPerConcept: {}", nsPerConcept);
     }
 
-    private void loadDatabase(ObjectChronicleTaskServer tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
+    private void loadDatabase(ObjectChronicleTaskService tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
         Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
         Path logicMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
@@ -227,20 +227,20 @@ public class LogicIntegrationTests {
 
         log.info("  concepts in map: {}", ps.getConceptCount());
 
-        log.info("  sequences map: {}", getSequenceProvider().getConceptSequenceStream().distinct().count());
+        log.info("  sequences map: {}", getSequenceService().getConceptSequenceStream().distinct().count());
     }
 
     private HashTreeWithBitSets makeGraph(CradleExtensions cradle) throws IOException {
         log.info("  Start to make graph.");
         Instant collectStart = Instant.now();
-        IntStream conceptSequenceStream = getSequenceProvider().getParallelConceptSequenceStream();
+        IntStream conceptSequenceStream = getSequenceService().getParallelConceptSequenceStream();
         log.info("  conceptSequenceStream count 1:" + conceptSequenceStream.count());
-        conceptSequenceStream = getSequenceProvider().getParallelConceptSequenceStream();
+        conceptSequenceStream = getSequenceService().getParallelConceptSequenceStream();
         log.info("  conceptSequenceStream count 2:" + conceptSequenceStream.count());
-        conceptSequenceStream = getSequenceProvider().getParallelConceptSequenceStream();
+        conceptSequenceStream = getSequenceService().getParallelConceptSequenceStream();
         log.info("  conceptSequenceStream distinct count :" + conceptSequenceStream.distinct().count());
-        conceptSequenceStream = getSequenceProvider().getConceptSequenceStream();
-        GraphCollector collector = new GraphCollector(((TaxonomyService)getTaxonomyProvider()).getOriginDestinationTaxonomyRecords(),
+        conceptSequenceStream = getSequenceService().getConceptSequenceStream();
+        GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider)getTaxonomyService()).getOriginDestinationTaxonomyRecords(),
                 ViewCoordinates.getDevelopmentStatedLatest());
         HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
                 HashTreeBuilder::new,
@@ -256,7 +256,7 @@ public class LogicIntegrationTests {
 
     private void classify(CradleExtensions mapDbService, HashTreeWithBitSets g) throws IOException, ContradictionException, PropertyVetoException {
         log.info("  Start classify.");
-        ConceptSequenceSet conceptsToClassify = g.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(Taxonomies.SNOMED.getNid()));
+        ConceptSequenceSet conceptsToClassify = g.getDescendentSequenceSet(getSequenceService().getConceptSequence(Taxonomies.SNOMED.getNid()));
         log.info("   Concepts to classify: " + conceptsToClassify.size());
 
         AtomicInteger logicGraphMembers = new AtomicInteger();
@@ -274,7 +274,7 @@ public class LogicIntegrationTests {
 
         // get refset members as a parallel stream?
         for (RefexChronicleBI<?> sememe : concept.getRefsetMembers()) {
-            if (conceptsToClassify.contains(getSequenceProvider().getConceptSequence(sememe.getReferencedComponentNid()))) {
+            if (conceptsToClassify.contains(getSequenceService().getConceptSequence(sememe.getReferencedComponentNid()))) {
                 ArrayOfByteArrayMember logicSememe = (ArrayOfByteArrayMember) sememe;
                 ArrayOfByteArrayMemberVersion logicGraphSememe = (ArrayOfByteArrayMemberVersion) logicSememe.getVersion(viewCoordinate);
                 graphToAxiomTranslator.translate(logicGraphSememe);
@@ -320,7 +320,7 @@ public class LogicIntegrationTests {
         log.info("\n  Start incremental test.");
 
         UUID appendicitsUuid = UUID.fromString("55450fab-6786-394d-89f9-a0fd44bd7e7e");
-        int appendicitisSequence = getSequenceProvider().getConceptSequence(mapDbService.getNidForUuids(appendicitsUuid));
+        int appendicitisSequence = getSequenceService().getConceptSequence(mapDbService.getNidForUuids(appendicitsUuid));
         java.util.Optional<Concept> appendicitis = graphToAxiomTranslator.getConceptFromSequence(appendicitisSequence);
         if (appendicitis.isPresent()) {
             Instant incrementalStart = Instant.now();
@@ -353,7 +353,7 @@ public class LogicIntegrationTests {
         // Figure out why role group is missing from current database, or is it a problem with the map...
         ConceptSpec tempRoleGroup = new ConceptSpec("Linkage concept", "1a3399bc-e6b5-3dea-8058-4e08012ff00f");
         ConceptSpec roleRoot = new ConceptSpec("Concept model attribute (attribute)", "6155818b-09ed-388e-82ce-caa143423e99");
-        g.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
+        g.getDescendentSequenceSet(getSequenceService().getConceptSequence(roleRoot.getNid()));
 
         
         
@@ -367,17 +367,17 @@ public class LogicIntegrationTests {
         int tempAuthorNid = author.getNid();
 
         ConceptSequenceSet roleConceptSequences = new ConceptSequenceSet();
-        ConceptSequenceSet roleConceptSequencesArray = g.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
+        ConceptSequenceSet roleConceptSequencesArray = g.getDescendentSequenceSet(getSequenceService().getConceptSequence(roleRoot.getNid()));
         roleConceptSequencesArray.stream().forEach(roleConceptSequence -> {
             roleConceptSequences.add(roleConceptSequence);
         });
         ConceptSequenceSet featureConceptSequences = new ConceptSequenceSet(); //empty set for now.
 
         ConceptSequenceSet neverRoleGroupConceptSequences = new ConceptSequenceSet();
-        neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.PART_OF.getNid()));
-        neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.LATERALITY.getNid()));
-        neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.HAS_ACTIVE_INGREDIENT.getNid()));
-        neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.HAS_DOSE_FORM.getNid()));
+        neverRoleGroupConceptSequences.add(getSequenceService().getConceptSequence(Snomed.PART_OF.getNid()));
+        neverRoleGroupConceptSequences.add(getSequenceService().getConceptSequence(Snomed.LATERALITY.getNid()));
+        neverRoleGroupConceptSequences.add(getSequenceService().getConceptSequence(Snomed.HAS_ACTIVE_INGREDIENT.getNid()));
+        neverRoleGroupConceptSequences.add(getSequenceService().getConceptSequence(Snomed.HAS_DOSE_FORM.getNid()));
 
         int roleGroupNid = tempRoleGroup.getNid();
 
@@ -459,7 +459,7 @@ public class LogicIntegrationTests {
                     }
                 }
                 if (logicGraphMember != null) {
-                    mapDbService.writeSememe(logicGraphMember);
+                    mapDbService.writeRefex(logicGraphMember);
                     if (logicGraphMember.revisions != null) {
                         int versionCount = logicGraphMember.revisions.size() + 1;
                         if (versionCount > maxGraphVersionsPerMember.get()) {
@@ -470,7 +470,7 @@ public class LogicIntegrationTests {
                             LogicGraph previousVersion = null;
                             for (ArrayOfByteArrayMemberVersion lgmv : logicGraphMember.getVersions()) {
                                 LogicGraph lg = new LogicGraph(lgmv.getArrayOfByteArray(), DataSource.INTERNAL,
-                                getSequenceProvider().getConceptSequence(lgmv.getReferencedComponentNid()));
+                                getSequenceService().getConceptSequence(lgmv.getReferencedComponentNid()));
                                 printGraph(builder, "Version " + version++ + " stamp: " + Stamp.stampFromIntStamp(lgmv.getStamp()).toString() + "\n ",
                                         conceptChronicle, maxGraphSize, lg.getNodeCount(), lg);
                                 if (previousVersion != null) {
