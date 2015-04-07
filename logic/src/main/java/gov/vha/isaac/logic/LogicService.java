@@ -17,6 +17,8 @@ package gov.vha.isaac.logic;
 
 import gov.vha.isaac.ochre.api.ClassifierService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import java.util.Optional;
 import org.jvnet.hk2.annotations.Contract;
@@ -27,7 +29,13 @@ import org.jvnet.hk2.annotations.Contract;
  */
 @Contract
 public interface LogicService extends ClassifierService {
+    
     Optional<LatestVersion<LogicGraph>> getLogicGraph(int conceptId, int logicAssemblageId, 
             StampCoordinate stampCoordinate);
+    
+    int getConceptSequenceForExpression(LogicGraph expression, 
+            StampCoordinate stampCoordinate, 
+            LogicCoordinate logicCoordinate, 
+            EditCoordinate editCoordinate);
     
 }
