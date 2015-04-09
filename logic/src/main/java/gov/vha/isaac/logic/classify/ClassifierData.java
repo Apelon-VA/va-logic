@@ -92,7 +92,17 @@ public class ClassifierData {
     
     public Instant getLastClassifyInstant() {
         return this.lastClassifyInstant;
-    }    
-    
-    
+    }
+
+    @Override
+    public String toString() {
+        return "ClassifierData{" +
+                "graphToAxiomTranslator=" + graphToAxiomTranslator +
+                ",\n incrementalToAxiomTranslator=" + incrementalToAxiomTranslator +
+                ",\n reasoner=" + reasoner +
+                ",\n lastClassifyInstant=" + lastClassifyInstant +
+                ",\n stampCoordinate=" + stampCoordinate +
+                ",\n logicCoordinate=" + logicCoordinate +
+                '}';
+    }
 }

@@ -131,8 +131,8 @@ public class LogicIntegrationTests {
         logic.incrementalClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
         
-        exportDatabase(tts);
-        exportLogicGraphDatabase(tts);
+        //exportDatabase(tts);
+        //exportLogicGraphDatabase(tts);
     }
     
     private void exportDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException {
