@@ -271,4 +271,14 @@ public class GraphToAxiomTranslator {
         }
         throw new UnsupportedOperationException("Child of FeatureNode node cannot return null concept. Concept: " + conceptNid + " graph: " + logicGraph);
     }
+
+    @Override
+    public String toString() {
+        return "GraphToAxiomTranslator{" +
+                "axioms=" + axioms.size() +
+                ", sequenceLogicConceptMap=" + sequenceLogicConceptMap.getSequences().count() +
+                ", sequenceLogicRoleMap=" + sequenceLogicRoleMap.size() +
+                ", sequenceLogicFeatureMap=" + sequenceLogicFeatureMap.size() +
+                '}';
+    }
 }

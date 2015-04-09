@@ -72,7 +72,6 @@ import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.Position;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Taxonomies;
 import org.ihtsdo.otf.tcc.api.relationship.RelAssertionType;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
@@ -87,6 +86,8 @@ import org.jvnet.hk2.annotations.Service;
 @Service(name = "logic provider")
 @RunLevel(value = 2)
 public class LogicProvider implements LogicService {
+
+    private static boolean VERBOSE = false;
 
     private static final Logger log = LogManager.getLogger();
     private static IdentifierService identifierProvider;
@@ -232,7 +233,9 @@ public class LogicProvider implements LogicService {
                             if (logicGraph.isMeaningful()) {
                                 byte[][] logicGraphBytes = logicGraph.pack(DataTarget.INTERNAL);
                                 int graphNodeCount = logicGraphBytes.length;
-                                printIfMoreNodes(graphNodeCount, maxGraphSize, conceptChronicle, logicGraph);
+                                if (VERBOSE) {
+                                    printIfMoreNodes(graphNodeCount, maxGraphSize, conceptChronicle, logicGraph);
+                                }
 
                                 if (logicGraphChronicle == null) {
                                     logicGraphVersions.incrementAndGet();
@@ -271,7 +274,9 @@ public class LogicProvider implements LogicService {
                 }
                 if (logicGraphChronicle != null) {
                     getSememeProvider().writeSememe(logicGraphChronicle);
-                    printIfMoreRevisions(logicGraphChronicle, maxGraphVersionsPerMember, conceptChronicle, maxGraphSize);
+                    if (VERBOSE) {
+                        printIfMoreRevisions(logicGraphChronicle, maxGraphVersionsPerMember, conceptChronicle, maxGraphSize);
+                    }
                 }
             } catch (IOException | ContradictionException e) {
                 throw new RuntimeException(e);
@@ -287,7 +292,7 @@ public class LogicProvider implements LogicService {
     public void printIfMoreNodes(int graphNodeCount, AtomicInteger maxGraphSize, ConceptChronicle conceptChronicle, LogicGraph logicGraph) {
         if (graphNodeCount > maxGraphSize.get()) {
             StringBuilder builder = new StringBuilder();
-            printGraph(builder, "\n Make dl graph for: ", conceptChronicle, maxGraphSize, graphNodeCount, logicGraph);
+            printGraph(builder, "Make dl graph for: ", conceptChronicle, maxGraphSize, graphNodeCount, logicGraph);
             System.out.println(builder.toString());
         }
     }
@@ -355,7 +360,7 @@ public class LogicProvider implements LogicService {
         log.info("  Finished making graph: " + resultGraph);
         log.info("  Generation duration: " + collectDuration);
         log.info("  Start classify.");
-        ConceptSequenceSet conceptSequencesToClassify = resultGraph.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(Taxonomies.SNOMED.getNid()));
+        ConceptSequenceSet conceptSequencesToClassify = resultGraph.getDescendentSequenceSet(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getSequence());
         log.info("   Concepts to classify: " + conceptSequencesToClassify.size());
         NidSet conceptNidSetToClassify = NidSet.of(conceptSequencesToClassify);
         AtomicInteger logicGraphMembers = new AtomicInteger();
@@ -364,11 +369,13 @@ public class LogicProvider implements LogicService {
         log.info("     Start axiom construction.");
         Instant axiomConstructionStart = Instant.now();
         ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
+        log.info("     classifier data before: " + cd);
         processAllStatedAxioms(stampCoordinate, logicCoordinate,
                 conceptNidSetToClassify, cd,
                 logicGraphMembers,
                 rejectedLogicGraphMembers);
         Instant axiomConstructionEnd = Instant.now();
+        log.info("     classifier data after: " + cd);
         Duration axiomConstructionDuration = Duration.between(axiomConstructionStart, axiomConstructionEnd);
         log.info("     Finished axiom construction. LogicGraphMembers: " + logicGraphMembers + " rejected members: " + rejectedLogicGraphMembers);
         log.info("     Axiom construction duration: " + axiomConstructionDuration);
@@ -405,7 +412,7 @@ public class LogicProvider implements LogicService {
                 editCoordinate.getAuthorSequence():
                 "classifier sequence: " + logicCoordinate.getClassifierSequence() +
                 " author sequence: " + editCoordinate.getAuthorSequence();
-        log.info("\n  Start incremental test.");
+        log.info("Start incremental test.");
         log.info("  Start to make graph for classification.");
         Instant collectStart = Instant.now();
         HashTreeWithBitSets resultGraph = getTaxonomyGraph();
@@ -417,16 +424,16 @@ public class LogicProvider implements LogicService {
         
         Instant incrementalStart = Instant.now();
         ConceptSequenceSet conceptSequencesToClassify = 
-                resultGraph.getDescendentSequenceSet(getSequenceProvider().
-                        getConceptSequence(Taxonomies.SNOMED.getNid()));
+                resultGraph.getDescendentSequenceSet(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getSequence());
         NidSet conceptNidSetToClassify = NidSet.of(conceptSequencesToClassify);
         log.info("   Concepts to classify: " + conceptSequencesToClassify.size());
 
         AtomicInteger logicGraphMembers = new AtomicInteger();
         AtomicInteger rejectedLogicGraphMembers = new AtomicInteger();
         ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
+        log.info("     classifier data before: " + cd);
         if (cd.getLastClassifyInstant() != null) {
-            log.info("\n  Incremental classification ok.");
+            log.info("Incremental classification ok.");
             StampPosition lastClassifyPosition = new StampPositionImpl(
                     cd.getLastClassifyInstant().toEpochMilli(), 
                     editCoordinate.getPathSequence());
@@ -442,17 +449,18 @@ public class LogicProvider implements LogicService {
                     conceptNidSetToClassify, cd,
                     logicGraphMembers,
                     rejectedLogicGraphMembers);
-            log.info("\n  classifying new axioms.");
+            log.info("classifying new axioms.");
         } else {
-            log.info("\n  Full classification required.");
+            log.info("Full classification required.");
             processAllStatedAxioms(stampCoordinate, logicCoordinate,
                     conceptNidSetToClassify, cd,
                     logicGraphMembers,
                     rejectedLogicGraphMembers);
-            log.info("\n  classifying all axioms.");
+            log.info("classifying all axioms.");
         }
+        log.info("     classifier data after: " + cd);
         cd.classify();
-        log.info("\n  getting results.");
+        log.info("getting results.");
         Ontology res = cd.getClassifiedOntology();
         // TODO write back. 
         Instant incrementalEnd = Instant.now();
