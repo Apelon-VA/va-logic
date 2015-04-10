@@ -23,6 +23,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+
+import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
+import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,7 +70,6 @@ public class LogicIntegrationTests {
         }
         return taxonomyProvider;
     }
-    Subscription tickSubscription;
     private boolean dbExists = false;
 
     @BeforeSuite
@@ -80,25 +82,17 @@ public class LogicIntegrationTests {
         System.out.println("termstore folder path: " + dbFolderPath.toFile().exists());
 
         LookupService.startupIsaac();
-        tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
-                .subscribe(tick -> {
-                    Set<Task> taskSet = LookupService.getService(ActiveTaskSet.class).get();
-                    taskSet.stream().forEach((task) -> {
-                        double percentProgress = task.getProgress() * 100;
-                        if (percentProgress < 0) {
-                            percentProgress = 0;
-                        }
-                        log.printf(org.apache.logging.log4j.Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
-                                task.getTitle(), task.getMessage(), percentProgress);
-                    });
-                });
+        ActiveTasksTicker.start(10);
+        HeapUseTicker.start(10);
     }
 
     @AfterSuite
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
+        ActiveTasksTicker.stop();
+        HeapUseTicker.stop();
         LookupService.shutdownIsaac();
-        tickSubscription.unsubscribe();
+
     }
 
     @Test
