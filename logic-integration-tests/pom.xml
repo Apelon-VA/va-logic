@@ -88,7 +88,7 @@
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
-                    <argLine>-ea -d64 -Xmx6g -Djavafx.toolkit=gov.vha.isaac.ochre.api.HeadlessToolkit</argLine>
+                    <argLine>-ea -d64 -Xmx6g</argLine>
                     <!--argLine>-ea -d64 -XX:+UseCompressedOops -Xmx6g -Xms6g -Xbootclasspath/a:/Applications/jprofiler8/bin/agent.jar -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib</argLine-->
                     <!--debugForkedProcess>true</debugForkedProcess-->
                     <includes>
