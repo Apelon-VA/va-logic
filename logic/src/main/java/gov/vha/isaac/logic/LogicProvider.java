@@ -602,7 +602,6 @@ public class LogicProvider implements LogicService {
         public Function<LatestVersion<LogicGraph>, LatestVersion<LogicGraph>> finisher() {
             return Function.identity();
         }
-
     }
 
     @Override
@@ -610,7 +609,48 @@ public class LogicProvider implements LogicService {
             StampCoordinate stampCoordinate, 
             LogicCoordinate logicCoordinate, 
             EditCoordinate editCoordinate) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    
+        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeProvider().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
+        Optional<LatestVersion<LogicGraphSememeImpl>> match = sememeSnapshot.
+                getLatestActiveSememeVersionsFromAssemblage(
+                        logicCoordinate.getStatedAssemblageSequence()).
+                filter((LatestVersion<LogicGraphSememeImpl> t) -> {
+                    LogicGraphSememeImpl lgs = t.value();
+                    LogicGraph existingGraph = new LogicGraph(lgs.getGraphData(), DataSource.INTERNAL);
+                    return existingGraph.equals(expression);
+        }).findFirst();
+        
+        if (match.isPresent()) {
+            LogicGraphSememeImpl lgs = match.get().value();
+            return identifierProvider.getConceptSequence(lgs.getReferencedComponentNid());
+        }
+        
+        // create a concept
+        
+        UUID uuidForGraphSememe = UUID.randomUUID();
+        int nidForGraphSememe = identifierProvider.getNidForUuids(uuidForGraphSememe);
+        UUID uuidForConcept = UUID.randomUUID();
+        int cNid = identifierProvider.getNidForUuids(uuidForConcept);
+        int conceptSequence = identifierProvider.getConceptSequence(cNid);
+        identifierProvider.setConceptSequenceForComponentNid(conceptSequence, cNid);
+        SememeChronicleImpl<LogicGraphSememeImpl> chronicle = new SememeChronicleImpl<>(SememeType.LOGIC_GRAPH, 
+            uuidForGraphSememe, 
+            nidForGraphSememe, 
+            IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getSequence(), 
+            cNid, 
+            nidForGraphSememe);
+        
+        LogicGraphSememeImpl newGraphSememe = chronicle.createMutableVersion(LogicGraphSememeImpl.class, State.ACTIVE, editCoordinate);
+        
+        newGraphSememe.setGraphData(expression.pack(DataTarget.INTERNAL));
+        newGraphSememe.setTime(System.currentTimeMillis());
+        sememeProvider.writeSememe(chronicle);
+        
+        // TODO test commit, addDescriptions, create concept, classify, etc. 
+        
+        // Check for components of graph that do not exist. 
+        
+        return conceptSequence;
     }
 
 }

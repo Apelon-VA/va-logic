@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
@@ -33,8 +32,6 @@ import org.glassfish.hk2.api.MultiException;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.testing.hk2testng.HK2;
-import org.reactfx.EventStreams;
-import org.reactfx.Subscription;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -163,9 +160,7 @@ public class LogicIntegrationTests {
 
         Task<Integer> loadTask = tts.startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
                 snomedDataFile, logicMetadataFile);
-        LookupService.getService(ActiveTaskSet.class).get().add(loadTask);
         int conceptCount = loadTask.get();
-        LookupService.getService(ActiveTaskSet.class).get().remove(loadTask);
         Instant finish = Instant.now();
         Duration duration = Duration.between(start, finish);
         log.info("  Loaded " + conceptCount + " concepts in: " + duration);
