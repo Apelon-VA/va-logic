@@ -39,12 +39,8 @@ public final class FeatureNodeWithNids extends TypedNodeWithNids {
 
     public FeatureNodeWithNids(FeatureNodeWithUuids externalForm) {
         super(externalForm);
-        try {
-            operator = externalForm.getOperator();
-            unitsConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getUnitsConceptUuid());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        operator = externalForm.getOperator();
+        unitsConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getUnitsConceptUuid());
     }
 
     @Override

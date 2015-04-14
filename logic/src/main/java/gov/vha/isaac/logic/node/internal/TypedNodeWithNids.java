@@ -31,11 +31,7 @@ public abstract class TypedNodeWithNids extends ConnectorNode {
 
     public TypedNodeWithNids(TypedNodeWithUuids externalForm) {
         super(externalForm);
-        try {
-            this.typeConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getTypeConceptUuid());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.typeConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getTypeConceptUuid());
     }
 
     public int getTypeConceptNid() {

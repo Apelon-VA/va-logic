@@ -35,11 +35,8 @@ public final class ConceptNodeWithNids extends AbstractNode {
     }
    public ConceptNodeWithNids(ConceptNodeWithUuids externalForm) {
        super(externalForm);
-        try {
-            this.conceptNid = getIsaacDb().get().getNidForUuids(externalForm.getConceptUuid());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.conceptNid = getIsaacDb().get().getNidForUuids(externalForm.getConceptUuid());
+
     }
 
     
