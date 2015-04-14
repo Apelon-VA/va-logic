@@ -15,9 +15,9 @@
     <packaging>pom</packaging>
     
     <properties>
-        <ochre.version>2.23-SNAPSHOT</ochre.version>
-        <isaac-metadata.version>1.25-SNAPSHOT</isaac-metadata.version>
-        <newtons-cradle.version>1.13-SNAPSHOT</newtons-cradle.version>
+        <ochre.version>2.24-SNAPSHOT</ochre.version>
+        <isaac-metadata.version>1.26-SNAPSHOT</isaac-metadata.version>
+        <newtons-cradle.version>1.14-SNAPSHOT</newtons-cradle.version>
         <snorocket-core.version>2.5.7</snorocket-core.version>
     </properties>
     
