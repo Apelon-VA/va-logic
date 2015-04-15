@@ -17,7 +17,7 @@
     <properties>
         <ochre.version>2.25-SNAPSHOT</ochre.version>
         <isaac-metadata.version>1.27-SNAPSHOT</isaac-metadata.version>
-        <newtons-cradle.version>1.14-SNAPSHOT</newtons-cradle.version>
+        <newtons-cradle.version>1.15-SNAPSHOT</newtons-cradle.version>
         <snorocket-core.version>2.5.7</snorocket-core.version>
     </properties>
     
