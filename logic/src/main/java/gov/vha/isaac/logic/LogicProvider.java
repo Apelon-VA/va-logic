@@ -35,6 +35,8 @@ import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampPosition;
+import gov.vha.isaac.ochre.api.memory.MemoryConfigurations;
+import gov.vha.isaac.ochre.api.memory.MemoryManagementService;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.api.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
@@ -107,7 +109,7 @@ public class LogicProvider implements LogicService {
     /**
      * @return the identifierProvider
      */
-    public static IdentifierService getSequenceProvider() {
+    public static IdentifierService getIdentifierProvider() {
         if (identifierProvider == null) {
             identifierProvider = LookupService.getService(IdentifierService.class);
         }
@@ -150,15 +152,15 @@ public class LogicProvider implements LogicService {
 
             EditCoordinate ec = EditCoordinates.getDefaultUserVeteransAdministrationExtension();
 
-            ConceptSequenceSet roleConceptSequences = statedTree.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(roleRoot.getNid()));
+            ConceptSequenceSet roleConceptSequences = statedTree.getDescendentSequenceSet(getIdentifierProvider().getConceptSequence(roleRoot.getNid()));
 
-            ConceptSequenceSet featureConceptSequences = statedTree.getDescendentSequenceSet(getSequenceProvider().getConceptSequence(featureRoot.getNid()));
+            ConceptSequenceSet featureConceptSequences = statedTree.getDescendentSequenceSet(getIdentifierProvider().getConceptSequence(featureRoot.getNid()));
 
             ConceptSequenceSet neverRoleGroupConceptSequences = new ConceptSequenceSet();
-            neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.PART_OF.getNid()));
-            neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.LATERALITY.getNid()));
-            neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.HAS_ACTIVE_INGREDIENT.getNid()));
-            neverRoleGroupConceptSequences.add(getSequenceProvider().getConceptSequence(Snomed.HAS_DOSE_FORM.getNid()));
+            neverRoleGroupConceptSequences.add(getIdentifierProvider().getConceptSequence(Snomed.PART_OF.getNid()));
+            neverRoleGroupConceptSequences.add(getIdentifierProvider().getConceptSequence(Snomed.LATERALITY.getNid()));
+            neverRoleGroupConceptSequences.add(getIdentifierProvider().getConceptSequence(Snomed.HAS_ACTIVE_INGREDIENT.getNid()));
+            neverRoleGroupConceptSequences.add(getIdentifierProvider().getConceptSequence(Snomed.HAS_DOSE_FORM.getNid()));
 
             //------------
             makeGraphs(cradleService,
@@ -192,7 +194,7 @@ public class LogicProvider implements LogicService {
             ConceptSequenceSet featureConceptSequences,
             ConceptSequenceSet neverRoleGroupConceptSequences) {
         log.info("  Start makeDlGraph: " + viewForLogicGraph.getRelationshipAssertionType());
-        int definitionAssemblageNid = getSequenceProvider().getConceptNid(assemblageSequence);
+        int definitionAssemblageNid = getIdentifierProvider().getConceptNid(assemblageSequence);
         Instant collectStart = Instant.now();
         Instant collectEnd;
         Duration collectDuration;
@@ -241,7 +243,7 @@ public class LogicProvider implements LogicService {
                                     logicGraphVersions.incrementAndGet();
                                     UUID primordialUuid = UUID.randomUUID();
                                     int nid = cradleService.getNidForUuids(primordialUuid);
-                                    int containerSequence = getSequenceProvider().getSememeSequence(nid);
+                                    int containerSequence = getIdentifierProvider().getSememeSequence(nid);
                                     logicGraphChronicle = new SememeChronicleImpl<>(
                                             SememeType.LOGIC_GRAPH,
                                             primordialUuid,
@@ -309,7 +311,7 @@ public class LogicProvider implements LogicService {
                 LogicGraph previousVersion = null;
                 for (LogicGraphSememeImpl lgmv : versions) {
                     LogicGraph lg = new LogicGraph(lgmv.getGraphData(), DataSource.INTERNAL,
-                            getSequenceProvider().getConceptSequence(lgmv.getReferencedComponentNid()));
+                            getIdentifierProvider().getConceptSequence(lgmv.getReferencedComponentNid()));
                     printGraph(builder, "Version " + version++ + " stamp: " + Stamp.stampFromIntStamp(lgmv.getStampSequence()).toString() + "\n ",
                             conceptChronicle, maxGraphSize, lg.getNodeCount(), lg);
                     if (previousVersion != null) {
@@ -381,6 +383,7 @@ public class LogicProvider implements LogicService {
         log.info("     Axiom construction duration: " + axiomConstructionDuration);
         log.info("     Start axiom load.");
         Instant axiomLoadStart = Instant.now();
+        LookupService.getService(MemoryManagementService.class).setMemoryConfiguration(MemoryConfigurations.CLASSIFY);
         cd.loadAxioms();
         Instant axiomLoadEnd = Instant.now();
         Duration axiomLoadDuration = Duration.between(axiomLoadStart, axiomLoadEnd);
@@ -421,6 +424,7 @@ public class LogicProvider implements LogicService {
             log.info("  Finished making graph: " + resultGraph);
             log.info("  Generation duration: " + collectDuration);
             log.info("  Start classify.");
+        LookupService.getService(MemoryManagementService.class).setMemoryConfiguration(MemoryConfigurations.CLASSIFY);
         
         Instant incrementalStart = Instant.now();
         ConceptSequenceSet conceptSequencesToClassify = 
@@ -442,7 +446,7 @@ public class LogicProvider implements LogicService {
                             logicCoordinate.getStatedAssemblageSequence(), 
                             lastClassifyPosition);
             ConceptSequenceSet modifiedConcepts = 
-                    identifierProvider.getConceptSequencesForReferencedComponents(modifiedSememeSequences);
+                    getIdentifierProvider().getConceptSequencesForReferencedComponents(modifiedSememeSequences);
            
             modifiedConcepts.and(conceptSequencesToClassify);
             processIncrementalStatedAxioms(stampCoordinate, logicCoordinate,
@@ -470,7 +474,7 @@ public class LogicProvider implements LogicService {
 
     protected HashTreeWithBitSets getTaxonomyGraph() {
         try {
-            IntStream conceptSequenceStream = getSequenceProvider().getParallelConceptSequenceStream();
+            IntStream conceptSequenceStream = getIdentifierProvider().getParallelConceptSequenceStream();
             GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) getTaxonomyProvider()).getOriginDestinationTaxonomyRecords(),
                     ViewCoordinates.getDevelopmentStatedLatest()); 
             HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
@@ -602,7 +606,6 @@ public class LogicProvider implements LogicService {
         public Function<LatestVersion<LogicGraph>, LatestVersion<LogicGraph>> finisher() {
             return Function.identity();
         }
-
     }
 
     @Override
@@ -610,7 +613,48 @@ public class LogicProvider implements LogicService {
             StampCoordinate stampCoordinate, 
             LogicCoordinate logicCoordinate, 
             EditCoordinate editCoordinate) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    
+        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeProvider().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
+        Optional<LatestVersion<LogicGraphSememeImpl>> match = sememeSnapshot.
+                getLatestActiveSememeVersionsFromAssemblage(
+                        logicCoordinate.getStatedAssemblageSequence()).
+                filter((LatestVersion<LogicGraphSememeImpl> t) -> {
+                    LogicGraphSememeImpl lgs = t.value();
+                    LogicGraph existingGraph = new LogicGraph(lgs.getGraphData(), DataSource.INTERNAL);
+                    return existingGraph.equals(expression);
+        }).findFirst();
+        
+        if (match.isPresent()) {
+            LogicGraphSememeImpl lgs = match.get().value();
+            return getIdentifierProvider().getConceptSequence(lgs.getReferencedComponentNid());
+        }
+        
+        // create a concept
+        
+        UUID uuidForGraphSememe = UUID.randomUUID();
+        int nidForGraphSememe = getIdentifierProvider().getNidForUuids(uuidForGraphSememe);
+        UUID uuidForConcept = UUID.randomUUID();
+        int cNid = getIdentifierProvider().getNidForUuids(uuidForConcept);
+        int conceptSequence = getIdentifierProvider().getConceptSequence(cNid);
+        getIdentifierProvider().setConceptSequenceForComponentNid(conceptSequence, cNid);
+        SememeChronicleImpl<LogicGraphSememeImpl> chronicle = new SememeChronicleImpl<>(SememeType.LOGIC_GRAPH, 
+            uuidForGraphSememe, 
+            nidForGraphSememe, 
+            IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getSequence(), 
+            cNid, 
+            nidForGraphSememe);
+        
+        LogicGraphSememeImpl newGraphSememe = chronicle.createMutableVersion(LogicGraphSememeImpl.class, State.ACTIVE, editCoordinate);
+        
+        newGraphSememe.setGraphData(expression.pack(DataTarget.INTERNAL));
+        newGraphSememe.setTime(System.currentTimeMillis());
+        sememeProvider.writeSememe(chronicle);
+        
+        // TODO test commit, addDescriptions, create concept, classify, etc. 
+        
+        // Check for components of graph that do not exist. 
+        
+        return conceptSequence;
     }
 
 }

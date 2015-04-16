@@ -4,18 +4,22 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.3</version>
+        <version>1.4</version>
     </parent>
+    
+    <groupId>gov.vha.isaac.logic</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.7</version>
+    <version>1.10</version>
     <name>${project.artifactId}: (MMP)</name>
     <packaging>pom</packaging>
+    
     <properties>
-        <ochre.version>2.22</ochre.version>
-        <isaac-metadata.version>1.24</isaac-metadata.version>
-        <newtons-cradle.version>1.12</newtons-cradle.version>
+        <ochre.version>2.25</ochre.version>
+        <isaac-metadata.version>1.27</isaac-metadata.version>
+        <newtons-cradle.version>1.15</newtons-cradle.version>
         <snorocket-core.version>2.5.7</snorocket-core.version>
-   </properties>
+    </properties>
+    
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -24,27 +28,33 @@
                 <version>${snorocket-core.version}</version>
             </dependency>
             <dependency>
-                <groupId>gov.vha.isaac</groupId>
+                <groupId>gov.vha.isaac.ochre.modules</groupId>
                 <artifactId>tcc-api</artifactId>
                 <version>${ochre.version}</version>
             </dependency>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>gov.vha.isaac.ochre.modules</groupId>
+                <artifactId>tcc-model-impl</artifactId>
+                <version>${ochre.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>gov.vha.isaac.newtons-cradle.modules</groupId>
                 <artifactId>newtons-cradle</artifactId>
                 <version>${newtons-cradle.version}</version>
-            </dependency>            
+            </dependency>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
                 <artifactId>isaac-metadata-artifacts</artifactId>
                 <version>${isaac-metadata.version}</version>
-            </dependency>            
+            </dependency>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
                 <artifactId>isaac-metadata-coordinates</artifactId>
                 <version>${isaac-metadata.version}</version>
-            </dependency>            
+            </dependency>
         </dependencies>
     </dependencyManagement>
+    
     <modules>
         <module>logic</module>
         <module>logic-integration-tests</module>

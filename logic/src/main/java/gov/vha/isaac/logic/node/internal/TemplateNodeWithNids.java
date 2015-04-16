@@ -46,12 +46,8 @@ public final class TemplateNodeWithNids extends AbstractNode {
 
     public TemplateNodeWithNids(TemplateNodeWithUuids externalForm) {
         super(externalForm);
-        try {
-            this.templateConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getTemplateConceptUuid());
-            this.assemblageConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getAssemblageConceptUuid());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.templateConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getTemplateConceptUuid());
+        this.assemblageConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getAssemblageConceptUuid());
     }
 
     @Override
