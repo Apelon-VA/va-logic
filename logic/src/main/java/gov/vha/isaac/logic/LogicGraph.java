@@ -14,6 +14,8 @@ import gov.vha.isaac.logic.node.external.TemplateNodeWithUuids;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
+import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
@@ -47,6 +49,14 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
  * TODO Standard refset for right identities
  */
 public class LogicGraph {
+
+    private static IdentifierService idService;
+    private static IdentifierService getIdentifierService() {
+        if (idService == null) {
+            idService = LookupService.getService(IdentifierService.class);
+        }
+        return idService;
+    }
 
     private static final NodeSemantic[] NODE_SEMANTICS = NodeSemantic.values();
     
@@ -227,10 +237,11 @@ public class LogicGraph {
                     || (relAssertionType == RelAssertionType.INFERRED && relVersion.isInferred())) {
                 if (relVersion.getGroup() == 0) {
                     int typeNid = relVersion.getTypeNid();
+                    int typeSequence = getIdentifierService().getConceptSequence(typeNid);
                     if (isaNid == typeNid) {
                         andNode.addChildren(Concept(relVersion.getDestinationNid()));
-                    } else if (roleConceptSequences.contains(typeNid)) {
-                        if (neverRoleGroupConceptSequences.contains(typeNid)) {
+                    } else if (roleConceptSequences.contains(typeSequence)) {
+                        if (neverRoleGroupConceptSequences.contains(typeSequence)) {
                             andNode.addChildren(SomeRole(relVersion.getTypeNid(), Concept(relVersion.getDestinationNid())));
                         } else {
                             andNode.addChildren(SomeRole(roleGroupNid,
