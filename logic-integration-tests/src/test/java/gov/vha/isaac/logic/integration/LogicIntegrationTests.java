@@ -141,7 +141,7 @@ public class LogicIntegrationTests {
         NecessarySet(And(ConceptAssertion(Snomed.BLEEDING_FINDING, defBuilder)));
         
         LogicalDefinition def = defBuilder.build();
-        log.info("Created definition: " + def);
+        log.info("Created definition:\n " + def);
         
         getCommitService().commit("Commit for logic integration incremental classification test. ");
         logic.incrementalClassification(StampCoordinates.getDevelopmentLatest(), 
