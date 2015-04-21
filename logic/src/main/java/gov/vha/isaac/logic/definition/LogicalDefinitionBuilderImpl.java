@@ -268,6 +268,7 @@ public class LogicalDefinitionBuilderImpl implements LogicalDefinitionBuilder {
     public LogicalDefinition build() throws IllegalStateException {
         checkNotBuilt();
         LogicGraph definition = new LogicGraph();
+        definition.Root();
 
         rootSets.forEach((axiom) -> addToDefinition(axiom, definition));
 

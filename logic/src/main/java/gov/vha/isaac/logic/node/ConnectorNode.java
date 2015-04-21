@@ -101,10 +101,10 @@ public abstract class ConnectorNode extends AbstractNode {
     public String toString() {
         if (childIndices != null && !childIndices.isEmpty()) {
             if (childIndices.size() == 1) {
-                return " child" + childIndices
+                return "->" + childIndices
                         + super.toString();
             }
-            return " children" + childIndices
+            return "->" + childIndices
                     + super.toString();
         }
         return "";
