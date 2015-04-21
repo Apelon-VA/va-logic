@@ -8,7 +8,7 @@ package gov.vha.isaac.logic.integration;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.identifier.IdentifierProvider;
 import gov.vha.isaac.logic.LogicService;
-import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
-
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import javafx.concurrent.Task;

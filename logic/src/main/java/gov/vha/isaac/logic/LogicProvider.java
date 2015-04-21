@@ -97,6 +97,11 @@ public class LogicProvider implements LogicService {
     private static IdentifierService identifierProvider;
     private static TaxonomyService taxonomyProvider;
     private static SememeService sememeProvider;
+    
+    private LogicProvider() {
+        //For HK2
+        log.info("logic provider constructed");
+    }
 
     @PostConstruct
     private void startMe() throws IOException {
