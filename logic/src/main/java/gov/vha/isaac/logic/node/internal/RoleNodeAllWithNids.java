@@ -3,7 +3,6 @@ package gov.vha.isaac.logic.node.internal;
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.NodeSemantic;
 import gov.vha.isaac.logic.node.AbstractNode;
-import gov.vha.isaac.logic.node.external.FeatureNodeWithUuids;
 import gov.vha.isaac.logic.node.external.RoleNodeAllWithUuids;
 import gov.vha.isaac.ochre.api.DataTarget;
 

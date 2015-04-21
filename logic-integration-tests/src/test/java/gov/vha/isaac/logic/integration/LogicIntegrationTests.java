@@ -16,6 +16,12 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.commit.CommitManager;
+import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.logic.LogicalDefinition;
+import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilder;
+import static gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilder.*;
+import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilderService;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.MultiException;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.testing.hk2testng.HK2;
 import org.testng.annotations.AfterSuite;
@@ -46,6 +53,7 @@ public class LogicIntegrationTests {
     private static final Logger log = LogManager.getLogger();
     private static IdentifierProvider sequenceProvider;
     private static TaxonomyService taxonomyProvider;
+    private static CommitService commitProvider;
 
     /**
      * @return the sequenceProvider
@@ -66,6 +74,13 @@ public class LogicIntegrationTests {
         }
         return taxonomyProvider;
     }
+    public static CommitService getCommitService() {
+        if (commitProvider == null) {
+            commitProvider = LookupService.getService(CommitService.class);
+        }
+        return commitProvider;
+    }
+    
     private boolean dbExists = false;
 
     @BeforeSuite
@@ -118,6 +133,17 @@ public class LogicIntegrationTests {
         logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
         
+        // Add new concept and definition here to classify. 
+        
+        LogicalDefinitionBuilderService defBuilderService = LookupService.getService(LogicalDefinitionBuilderService.class);
+        LogicalDefinitionBuilder defBuilder = defBuilderService.getBuilder();
+        
+        NecessarySet(And(ConceptAssertion(Snomed.BLEEDING_FINDING, defBuilder)));
+        
+        LogicalDefinition def = defBuilder.build();
+        log.info("Created definition: " + def);
+        
+        getCommitService().commit("Commit for logic integration incremental classification test. ");
         logic.incrementalClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
         

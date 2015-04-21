@@ -74,7 +74,7 @@ public class ClassifierData {
         return reasoner.classify();
     }
 
-    public IReasoner Incrementallassify() {
+    public IReasoner incrementalClassify() {
         lastClassifyInstant = Instant.now();
         reasoner.loadAxioms(incrementalToAxiomTranslator.getAxioms());
         graphToAxiomTranslator.getAxioms().addAll(incrementalToAxiomTranslator.getAxioms());

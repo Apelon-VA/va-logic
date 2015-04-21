@@ -489,15 +489,23 @@ public class LogicProvider implements LogicService {
                     getSememeSequencesFromAssemblageModifiedAfterPosition(
                             logicCoordinate.getStatedAssemblageSequence(),
                             lastClassifyPosition);
-            ConceptSequenceSet modifiedConcepts
-                    = getIdentifierProvider().getConceptSequencesForReferencedComponents(modifiedSememeSequences);
+            log.info("Modified graph count: " + modifiedSememeSequences.size());
+            if (modifiedSememeSequences.isEmpty()) {
+                log.info("No changes to classify.");
+            } else {
+                ConceptSequenceSet modifiedConcepts
+                        = getIdentifierProvider().getConceptSequencesForReferencedComponents(modifiedSememeSequences);
+                log.info("Modified concept count: " + modifiedConcepts.size());
 
-            modifiedConcepts.and(conceptSequencesToClassify);
-            processIncrementalStatedAxioms(stampCoordinate, logicCoordinate,
-                    conceptNidSetToClassify, cd,
-                    logicGraphMembers,
-                    rejectedLogicGraphMembers);
-            log.info("classifying new axioms.");
+                modifiedConcepts.and(conceptSequencesToClassify);
+                processIncrementalStatedAxioms(stampCoordinate, logicCoordinate,
+                        conceptNidSetToClassify, cd,
+                        logicGraphMembers,
+                        rejectedLogicGraphMembers);
+                log.info("classifying new axioms.");
+                cd.incrementalClassify();
+            }
+
         } else {
             log.info("Full classification required.");
             processAllStatedAxioms(stampCoordinate, logicCoordinate,
@@ -505,9 +513,10 @@ public class LogicProvider implements LogicService {
                     logicGraphMembers,
                     rejectedLogicGraphMembers);
             log.info("classifying all axioms.");
+            cd.classify();
         }
         log.info("     classifier data after: " + cd);
-        cd.classify();
+
         log.info("getting results.");
         Ontology res = cd.getClassifiedOntology();
         // TODO write back. 

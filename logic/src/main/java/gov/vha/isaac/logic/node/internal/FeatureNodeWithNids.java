@@ -4,7 +4,6 @@ import gov.vha.isaac.logic.ConcreteDomainOperators;
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.NodeSemantic;
 import gov.vha.isaac.logic.node.AbstractNode;
-import gov.vha.isaac.logic.node.external.ConceptNodeWithUuids;
 import gov.vha.isaac.logic.node.external.FeatureNodeWithUuids;
 import gov.vha.isaac.ochre.api.DataTarget;
 
@@ -13,8 +12,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
 
 /**
