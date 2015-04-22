@@ -14,6 +14,10 @@ import gov.vha.isaac.logic.node.external.TemplateNodeWithUuids;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
+import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.logic.LogicalDefinition;
+import gov.vha.isaac.ochre.api.logic.assertions.substitution.SubstitutionFieldSpecification;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
@@ -46,7 +50,15 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
  * 
  * TODO Standard refset for right identities
  */
-public class LogicGraph {
+public class LogicGraph implements LogicalDefinition {
+
+    private static IdentifierService idService;
+    private static IdentifierService getIdentifierService() {
+        if (idService == null) {
+            idService = LookupService.getService(IdentifierService.class);
+        }
+        return idService;
+    }
 
     private static final NodeSemantic[] NODE_SEMANTICS = NodeSemantic.values();
     
@@ -59,7 +71,7 @@ public class LogicGraph {
 
     ArrayList<Node> nodes = new ArrayList<>();
 
-    protected LogicGraph() {
+    public LogicGraph() {
     }
     
     public LogicGraph(byte[][] nodeDataArray, DataSource dataSource, int conceptSequence) {
@@ -227,10 +239,11 @@ public class LogicGraph {
                     || (relAssertionType == RelAssertionType.INFERRED && relVersion.isInferred())) {
                 if (relVersion.getGroup() == 0) {
                     int typeNid = relVersion.getTypeNid();
+                    int typeSequence = getIdentifierService().getConceptSequence(typeNid);
                     if (isaNid == typeNid) {
                         andNode.addChildren(Concept(relVersion.getDestinationNid()));
-                    } else if (roleConceptSequences.contains(typeNid)) {
-                        if (neverRoleGroupConceptSequences.contains(typeNid)) {
+                    } else if (roleConceptSequences.contains(typeSequence)) {
+                        if (neverRoleGroupConceptSequences.contains(typeSequence)) {
                             andNode.addChildren(SomeRole(relVersion.getTypeNid(), Concept(relVersion.getDestinationNid())));
                         } else {
                             andNode.addChildren(SomeRole(roleGroupNid,
@@ -391,8 +404,15 @@ public class LogicGraph {
         return new RoleNodeSomeWithUuids(this, dataInputStream);
     }
 
-    public FeatureNodeWithNids Feature(int typeNid, LiteralNode literal) {
+    public FeatureNodeWithNids Feature(int typeNid, AbstractNode literal) {
+        // check for LiteralNode or SubstitutionNodeLiteral
+        if ((literal instanceof LiteralNode) || (
+                literal instanceof SubstitutionNodeLiteral)) {
         return new FeatureNodeWithNids(this, typeNid, literal);
+        }
+        throw new IllegalStateException(
+                "Node must be of type LiteralNode or SubstitutionNodeLiteral. Found: " + 
+                        literal);
     }
     public final FeatureNodeWithNids Feature(DataInputStream dataInputStream) throws IOException {
         return new FeatureNodeWithNids(this, dataInputStream);
@@ -400,10 +420,6 @@ public class LogicGraph {
 
     public final FeatureNodeWithUuids FeatureWithUuids(DataInputStream dataInputStream) throws IOException {
         return new FeatureNodeWithUuids(this, dataInputStream);
-    }
-
-    public FeatureNodeWithNids Feature(int typeNid, SubstitutionNodeLiteral literalSubstitution) {
-        return new FeatureNodeWithNids(this, typeNid, literalSubstitution);
     }
 
     public LiteralNodeBoolean BooleanLiteral(boolean literalValue) {
@@ -467,16 +483,16 @@ public class LogicGraph {
         return new TemplateNodeWithUuids(this, dataInputStream);
     }
 
-    public SubstitutionNodeBoolean BooleanSubstitution(SubstitutionEnum substitutionEnum) {
-        return new SubstitutionNodeBoolean(this, substitutionEnum);
+    public SubstitutionNodeBoolean BooleanSubstitution(SubstitutionFieldSpecification substitutionFieldSpecification) {
+        return new SubstitutionNodeBoolean(this, substitutionFieldSpecification);
     }
     public final SubstitutionNodeBoolean BooleanSubstitution(DataInputStream dataInputStream) throws IOException {
         return new SubstitutionNodeBoolean(this, dataInputStream);
     }
 
 
-    public SubstitutionNodeConcept ConceptSubstitution(SubstitutionEnum substitutionEnum) {
-        return new SubstitutionNodeConcept(this, substitutionEnum);
+    public SubstitutionNodeConcept ConceptSubstitution(SubstitutionFieldSpecification substitutionFieldSpecification) {
+        return new SubstitutionNodeConcept(this, substitutionFieldSpecification);
     }
     
     public final SubstitutionNodeConcept ConceptSubstitution(DataInputStream dataInputStream) throws IOException {
@@ -484,32 +500,32 @@ public class LogicGraph {
     }
 
 
-    public SubstitutionNodeFloat FloatSubstitution(SubstitutionEnum substitutionEnum) {
-        return new SubstitutionNodeFloat(this, substitutionEnum);
+    public SubstitutionNodeFloat FloatSubstitution(SubstitutionFieldSpecification substitutionFieldSpecification) {
+        return new SubstitutionNodeFloat(this, substitutionFieldSpecification);
     }
 
     public final SubstitutionNodeFloat FloatSubstitution(DataInputStream dataInputStream) throws IOException {
         return new SubstitutionNodeFloat(this, dataInputStream);
     }
 
-    public SubstitutionNodeInstant InstantSubstitution(SubstitutionEnum substitutionEnum) {
-        return new SubstitutionNodeInstant(this, substitutionEnum);
+    public SubstitutionNodeInstant InstantSubstitution(SubstitutionFieldSpecification substitutionFieldSpecification) {
+        return new SubstitutionNodeInstant(this, substitutionFieldSpecification);
     }
 
     public final SubstitutionNodeInstant InstantSubstitution(DataInputStream dataInputStream) throws IOException {
         return new SubstitutionNodeInstant(this, dataInputStream);
     }
 
-    public SubstitutionNodeInteger IntegerSubstitution(SubstitutionEnum substitutionEnum) {
-        return new SubstitutionNodeInteger(this, substitutionEnum);
+    public SubstitutionNodeInteger IntegerSubstitution(SubstitutionFieldSpecification substitutionFieldSpecification) {
+        return new SubstitutionNodeInteger(this, substitutionFieldSpecification);
     }
 
     public final SubstitutionNodeInteger IntegerSubstitution(DataInputStream dataInputStream) throws IOException {
         return new SubstitutionNodeInteger(this, dataInputStream);
     }
 
-    public SubstitutionNodeString StringSubstitution(SubstitutionEnum substitutionEnum) {
-        return new SubstitutionNodeString(this, substitutionEnum);
+    public SubstitutionNodeString StringSubstitution(SubstitutionFieldSpecification substitutionFieldSpecification) {
+        return new SubstitutionNodeString(this, substitutionFieldSpecification);
     }
 
     public final SubstitutionNodeString StringSubstitution(DataInputStream dataInputStream) throws IOException {

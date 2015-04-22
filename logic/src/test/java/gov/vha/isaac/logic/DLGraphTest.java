@@ -1,7 +1,6 @@
 package gov.vha.isaac.logic;
 
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
-import org.junit.Test;
 
 /**
  * Created by kec on 12/12/14.

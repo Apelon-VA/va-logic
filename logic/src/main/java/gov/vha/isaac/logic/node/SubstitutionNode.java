@@ -2,8 +2,8 @@ package gov.vha.isaac.logic.node;
 
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.Node;
-import gov.vha.isaac.logic.SubstitutionEnum;
 import gov.vha.isaac.ochre.api.DataTarget;
+import gov.vha.isaac.ochre.api.logic.assertions.substitution.SubstitutionFieldSpecification;
 
 import java.io.DataInputStream;
 import java.io.DataOutput;
@@ -13,24 +13,30 @@ import java.io.IOException;
  * Created by kec on 12/10/14.
  */
 public abstract class SubstitutionNode extends AbstractNode {
-    private static final SubstitutionEnum[] SubstitutionEnumArray = SubstitutionEnum.values();
 
-    SubstitutionEnum substitutionEnum;
+    SubstitutionFieldSpecification substitutionFieldSpecification;
 
     public SubstitutionNode(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {
         super(logicGraphVersion, dataInputStream);
-        substitutionEnum = SubstitutionEnumArray[dataInputStream.readByte()];
+        int length = dataInputStream.readInt();
+        byte[] bytes = new byte[length];
+        dataInputStream.read(bytes, 0, length);
+        throw new UnsupportedOperationException(
+                "deserializer for substitution field specification not implemented");
     }
 
-    public SubstitutionNode(LogicGraph logicGraphVersion, SubstitutionEnum substitutionEnum) {
+    public SubstitutionNode(LogicGraph logicGraphVersion, 
+            SubstitutionFieldSpecification substitutionFieldSpecification) {
         super(logicGraphVersion);
-        this.substitutionEnum = substitutionEnum;
+        this.substitutionFieldSpecification = substitutionFieldSpecification;
     }
 
     @Override
     protected final void writeNodeData(DataOutput dataOutput, DataTarget dataTarget) throws IOException {
         super.writeData(dataOutput, dataTarget);
-        dataOutput.writeByte(substitutionEnum.ordinal());
+        byte[] bytes = substitutionFieldSpecification.getBytes();
+        dataOutput.writeInt(bytes.length);
+        dataOutput.write(bytes);
     }
 
     @Override
@@ -51,23 +57,23 @@ public abstract class SubstitutionNode extends AbstractNode {
 
         SubstitutionNode that = (SubstitutionNode) o;
 
-        return substitutionEnum.equals(that.substitutionEnum);
+        return substitutionFieldSpecification.equals(that.substitutionFieldSpecification);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + substitutionEnum.hashCode();
+        result = 31 * result + substitutionFieldSpecification.hashCode();
         return result;
     }
     @Override
     protected int compareFields(Node o) {
         SubstitutionNode that = (SubstitutionNode) o;
-        return this.substitutionEnum.compareTo(that.substitutionEnum);
+        return this.substitutionFieldSpecification.compareTo(that.substitutionFieldSpecification);
     }
 
     @Override
     public String toString() {
-        return " substitutionEnum='" + substitutionEnum + '\''  + super.toString();
+        return " substitutionFieldSpecification='" + substitutionFieldSpecification + '\''  + super.toString();
     }
 }

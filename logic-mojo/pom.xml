@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac.logic</groupId>
         <artifactId>logic-parent</artifactId>
-        <version>1.10</version>
+        <version>1.11</version>
     </parent>
     
     <groupId>gov.vha.isaac.logic.modules</groupId>
@@ -33,7 +33,7 @@
             <plugin>
                 <artifactId>maven-plugin-plugin</artifactId>
                 <configuration>
-                    <goalPrefix>tcc-mojo</goalPrefix>
+                    <goalPrefix>logic-mojo</goalPrefix>
                     <!-- <outputDirectory>target/dir</outputDirectory> -->
                     <!-- Deal with older (broken) versions of maven that can't find mojo code properly without help -->
                     <!-- see http://jira.codehaus.org/browse/MNG-5346 -->

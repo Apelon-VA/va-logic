@@ -2,7 +2,7 @@ package gov.vha.isaac.logic.node;
 
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.NodeSemantic;
-import gov.vha.isaac.logic.SubstitutionEnum;
+import gov.vha.isaac.ochre.api.logic.assertions.substitution.SubstitutionFieldSpecification;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -19,8 +19,9 @@ public class SubstitutionNodeInteger extends SubstitutionNodeLiteral {
         super(logicGraphVersion, dataInputStream);
     }
 
-    public SubstitutionNodeInteger(LogicGraph logicGraphVersion, SubstitutionEnum substitutionEnum) {
-        super(logicGraphVersion, substitutionEnum);
+    public SubstitutionNodeInteger(LogicGraph logicGraphVersion, 
+            SubstitutionFieldSpecification substitutionFieldSpecification) {
+        super(logicGraphVersion, substitutionFieldSpecification);
     }
 
     @Override
@@ -37,7 +38,7 @@ public class SubstitutionNodeInteger extends SubstitutionNodeLiteral {
         if (getIsaacDb().isPresent()) {
             try {
                 return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
-                        substitutionEnum.name());
+                        substitutionFieldSpecification.toString());
             } catch (IOException| NoSuchAlgorithmException ex) {
                 throw new RuntimeException(ex);
             } 

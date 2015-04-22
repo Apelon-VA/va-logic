@@ -4,19 +4,19 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.4</version>
+        <version>1.5</version>
     </parent>
     
     <groupId>gov.vha.isaac.logic</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.10</version>
+    <version>1.11</version>
     <name>${project.artifactId}: (MMP)</name>
     <packaging>pom</packaging>
     
     <properties>
-        <ochre.version>2.25</ochre.version>
-        <isaac-metadata.version>1.27</isaac-metadata.version>
-        <newtons-cradle.version>1.15</newtons-cradle.version>
+        <ochre.version>2.26</ochre.version>
+        <isaac-metadata.version>1.28</isaac-metadata.version>
+        <newtons-cradle.version>1.16</newtons-cradle.version>
         <snorocket-core.version>2.5.7</snorocket-core.version>
     </properties>
     
