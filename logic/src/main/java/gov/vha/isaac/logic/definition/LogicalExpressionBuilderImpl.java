@@ -21,8 +21,8 @@ import gov.vha.isaac.logic.node.AbstractNode;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinition;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilder;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
+import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
 import gov.vha.isaac.ochre.api.logic.assertions.AllRole;
 import gov.vha.isaac.ochre.api.logic.assertions.Assertion;
 import gov.vha.isaac.ochre.api.logic.assertions.ConceptAssertion;
@@ -61,7 +61,7 @@ import org.apache.mahout.math.map.OpenShortObjectHashMap;
  *
  * @author kec
  */
-public class LogicalDefinitionBuilderImpl implements LogicalDefinitionBuilder {
+public class LogicalExpressionBuilderImpl implements LogicalExpressionBuilder {
     
     private static IdentifierService identifierService = null;
     private static IdentifierService getIdentifierService() {
@@ -76,6 +76,9 @@ public class LogicalDefinitionBuilderImpl implements LogicalDefinitionBuilder {
     private final Set<GenericAxiom> rootSets = new HashSet<>();
     private final HashMap<GenericAxiom, List<GenericAxiom>> definitionTree = new HashMap<>(20);
     OpenShortObjectHashMap<Object> axiomParameters = new OpenShortObjectHashMap<>(20);
+
+    public LogicalExpressionBuilderImpl() {
+    }
 
     public short getNextAxiomIndex() {
         return nextAxiomId++;
@@ -265,7 +268,7 @@ public class LogicalDefinitionBuilderImpl implements LogicalDefinitionBuilder {
     }
 
     @Override
-    public LogicalDefinition build() throws IllegalStateException {
+    public LogicalExpression build() throws IllegalStateException {
         checkNotBuilt();
         LogicGraph definition = new LogicGraph();
         definition.Root();

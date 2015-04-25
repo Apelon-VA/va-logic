@@ -16,7 +16,7 @@ import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinition;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.assertions.substitution.SubstitutionFieldSpecification;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
@@ -50,7 +50,7 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
  * 
  * TODO Standard refset for right identities
  */
-public class LogicGraph implements LogicalDefinition {
+public class LogicGraph implements LogicalExpression {
 
     private static IdentifierService idService;
     private static IdentifierService getIdentifierService() {
@@ -296,6 +296,11 @@ public class LogicGraph implements LogicalDefinition {
 
     public Node getNode(int nodeIndex) {
         return nodes.get(nodeIndex);
+    }
+
+    @Override
+    public byte[][] getData(DataTarget dataTarget) {
+        return pack(dataTarget);
     }
 
     public byte[][] pack(DataTarget dataTarget) {

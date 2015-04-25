@@ -16,12 +16,15 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
-import gov.vha.isaac.ochre.api.commit.CommitManager;
+import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
+import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinition;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilder;
-import static gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilder.*;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilderService;
+import gov.vha.isaac.ochre.api.concept.ConceptBuilder;
+import gov.vha.isaac.ochre.api.concept.ConceptBuilderService;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
+import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
+import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
+import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +33,7 @@ import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -134,18 +138,30 @@ public class LogicIntegrationTests {
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
         
         // Add new concept and definition here to classify. 
+        ConceptBuilderService conceptBuilderService = LookupService.getService(ConceptBuilderService.class);
+        conceptBuilderService.setDefaultLanguageForDescriptions(IsaacMetadataAuxiliaryBinding.ENGLISH);
+        conceptBuilderService.setDefaultDialectAssemblageForDescriptions(IsaacMetadataAuxiliaryBinding.US_ENGLISH_DIALECT);
+        conceptBuilderService.setDefaultLogicCoordinate(LogicCoordinates.getStandardElProfile());
         
-        LogicalDefinitionBuilderService defBuilderService = LookupService.getService(LogicalDefinitionBuilderService.class);
-        LogicalDefinitionBuilder defBuilder = defBuilderService.getBuilder();
+        
+        LogicalExpressionBuilderService expressionBuilderService = LookupService.getService(LogicalExpressionBuilderService.class);
+        LogicalExpressionBuilder defBuilder = expressionBuilderService.getLogicalExpressionBuilder();
         
         NecessarySet(And(ConceptAssertion(Snomed.BLEEDING_FINDING, defBuilder)));
         
-        LogicalDefinition def = defBuilder.build();
-        log.info("Created definition:\n " + def);
+        LogicalExpression def = defBuilder.build();
+        log.info("Created definition:\n\n " + def);
         
-        getCommitService().commit("Commit for logic integration incremental classification test. ");
+        ConceptBuilder builder = conceptBuilderService.getDefaultConceptBuilder(
+                "primitive child of bleeding", "test concept", def);
+        
+        ChronicledConcept concept = builder.build(EditCoordinates.getDefaultUserSolorOverlay(), ChangeCheckerMode.ACTIVE);
+        
+        getCommitService().commit("Commit for logic integration incremental classification test. ").get();
+        ConceptSequenceSet newConcepts = new ConceptSequenceSet();
+        newConcepts.add(concept.getConceptSequence());
         logic.incrementalClassification(StampCoordinates.getDevelopmentLatest(), 
-                LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
+                LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay(), newConcepts);
         
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
