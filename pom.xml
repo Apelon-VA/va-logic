@@ -13,6 +13,10 @@
     <name>${project.artifactId}: (MMP)</name>
     <packaging>pom</packaging>
     
+    <scm>
+        <url>https://github.com/Apelon-VA/va-logic.git</url>
+    </scm>
+    
     <properties>
         <ochre.version>2.27-SNAPSHOT</ochre.version>
         <isaac-metadata.version>1.29-SNAPSHOT</isaac-metadata.version>
