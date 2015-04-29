@@ -22,6 +22,7 @@ import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.logic.classify.ClassifierData;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
+import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
@@ -30,8 +31,13 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
+import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.concept.ConceptBuilder;
+import gov.vha.isaac.ochre.api.concept.ConceptBuilderService;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
@@ -56,15 +62,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -99,21 +106,6 @@ public class LogicProvider implements LogicService {
     private static TaxonomyService taxonomyService;
     private static SememeService sememeService;
     private static CommitService commitService;
-    
-    private LogicProvider() {
-        //For HK2
-        log.info("logic provider constructed");
-    }
-
-    @PostConstruct
-    private void startMe() throws IOException {
-        System.out.println("Starting LogicProvider.");
-    }
-
-    @PreDestroy
-    private void stopMe() throws IOException {
-        System.out.println("Stopping LogicProvider.");
-    }
 
     /**
      * @return the identifierService
@@ -147,6 +139,26 @@ public class LogicProvider implements LogicService {
             sememeService = LookupService.getService(SememeService.class);
         }
         return sememeService;
+    }
+    
+    
+    private LogicServiceChangeListener logicServiceChangeListener; // strong reference to prevent garbage collection
+    private LogicProvider() {
+        //For HK2
+        log.info("logic provider constructed");
+    }
+
+    @PostConstruct
+    private void startMe() throws IOException {
+        System.out.println("Starting LogicProvider.");
+        logicServiceChangeListener = new LogicServiceChangeListener(
+                LogicCoordinates.getStandardElProfile(), this);
+        getCommitService().addChangeListener(logicServiceChangeListener);
+    }
+
+    @PreDestroy
+    private void stopMe() throws IOException {
+        System.out.println("Stopping LogicProvider.");
     }
 
     @Override
@@ -407,7 +419,7 @@ public class LogicProvider implements LogicService {
     }
 
     @Override
-    public void fullClassification(StampCoordinate stampCoordinate,
+    public ClassifierResults fullClassification(StampCoordinate stampCoordinate,
             LogicCoordinate logicCoordinate, EditCoordinate editCoordinate) {
         assert logicCoordinate.getClassifierSequence()
                 == editCoordinate.getAuthorSequence() :
@@ -461,14 +473,46 @@ public class LogicProvider implements LogicService {
         Duration retrieveResultsDuration = Duration.between(retrieveResultsStart, retrieveResultsEnd);
         log.info("     Finished retrieve results. ");
         log.info("     Retrieve results duration: " + retrieveResultsDuration);
+        ClassifierResults classifierResults = collectResults(res, res.getNodeMap().values());
         Instant classifyEnd = Instant.now();
         Duration classifyDuration = Duration.between(classifyStart, classifyEnd);
         log.info("  Finished classify. LogicGraphMembers: " + logicGraphMembers + " rejected members: " + rejectedLogicGraphMembers);
         log.info("  Classify duration: " + classifyDuration);
+        return classifierResults;
+    }
+
+    private ClassifierResults collectResults(Ontology res, Collection<au.csiro.ontology.Node> affectedNodes) {
+        ConceptSequenceSet affectedConcepts = new ConceptSequenceSet();
+        HashSet<ConceptSequenceSet> equivalentSets = new HashSet<>();
+        affectedNodes.forEach((node) -> {
+            Set<String> equivalentConcepts = node.getEquivalentConcepts();
+            if (node.getEquivalentConcepts().size() > 1) {
+                ConceptSequenceSet equivalentSet = new ConceptSequenceSet();
+                equivalentSets.add(equivalentSet);
+                equivalentConcepts.forEach((conceptSequence) -> {
+                    equivalentSet.add(Integer.parseInt(conceptSequence));
+                    affectedConcepts.add(Integer.parseInt(conceptSequence));
+                });
+            } else {
+                equivalentConcepts.forEach((conceptSequence) -> {
+                    try {
+                        affectedConcepts.add(Integer.parseInt(conceptSequence));
+                    } catch (NumberFormatException numberFormatException) {
+                        if (conceptSequence.equals("_BOTTOM_") ||
+                            conceptSequence.equals("_TOP_")) {
+                            // do nothing. 
+                        } else {
+                            throw numberFormatException;
+                        }
+                    }
+                });
+            }
+        });
+        return new ClassifierResults(affectedConcepts, equivalentSets);
     }
 
     @Override
-    public void incrementalClassification(StampCoordinate stampCoordinate,
+    public ClassifierResults incrementalClassification(StampCoordinate stampCoordinate,
             LogicCoordinate logicCoordinate, EditCoordinate editCoordinate, 
             ConceptSequenceSet newConcepts) {
         assert logicCoordinate.getClassifierSequence()
@@ -540,10 +584,20 @@ public class LogicProvider implements LogicService {
 
         log.info("getting results.");
         Ontology res = cd.getClassifiedOntology();
-        // TODO write back. 
+        newConcepts.stream().forEach((sequence) -> {
+            au.csiro.ontology.Node incrementalNode = res.getNode(Integer.toString(sequence));
+            
+            log.info("Incremental concept: " + sequence);
+            log.info("  Parents: " + incrementalNode.getParents());
+            log.info("  Equivalent concepts: " + incrementalNode.getEquivalentConcepts());
+            log.info("  Child concepts: " + incrementalNode.getChildren());
+        });
+        ClassifierResults classifierResults = collectResults(res, res.getAffectedNodes());
+         // TODO write back. 
         Instant incrementalEnd = Instant.now();
         Duration incrementalClassifyDuration = Duration.between(incrementalStart, incrementalEnd);
         log.info("  Incremental classify duration: " + incrementalClassifyDuration);
+        return classifierResults;
     }
 
     protected HashTreeWithBitSets getStatedTaxonomyGraph() {
@@ -719,29 +773,21 @@ public class LogicProvider implements LogicService {
             return getIdentifierService().getConceptSequence(lgs.getReferencedComponentNid());
         }
 
-        // create a concept
-        UUID uuidForGraphSememe = UUID.randomUUID();
-        int nidForGraphSememe = getIdentifierService().getNidForUuids(uuidForGraphSememe);
-        UUID uuidForConcept = UUID.randomUUID();
-        int cNid = getIdentifierService().getNidForUuids(uuidForConcept);
-        int conceptSequence = getIdentifierService().getConceptSequence(cNid);
-        getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, cNid);
-        SememeChronicleImpl<LogicGraphSememeImpl> chronicle = new SememeChronicleImpl<>(SememeType.LOGIC_GRAPH,
-                uuidForGraphSememe,
-                nidForGraphSememe,
-                IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getSequence(),
-                cNid,
-                nidForGraphSememe);
-
-        LogicGraphSememeImpl newGraphSememe = chronicle.createMutableUncommittedVersion(LogicGraphSememeImpl.class, State.ACTIVE, editCoordinate);
-
-        newGraphSememe.setGraphData(expression.pack(DataTarget.INTERNAL));
-        newGraphSememe.setTime(System.currentTimeMillis());
-        sememeService.writeSememe(chronicle);
-
-        // TODO test commit, addDescriptions, create concept, classify, etc. 
-        // Check for components of graph that do not exist. 
-        return conceptSequence;
+        UUID uuidForNewConcept = UUID.randomUUID();
+        ConceptBuilderService conceptBuilderService = LookupService.getService(ConceptBuilderService.class);
+        conceptBuilderService.setDefaultLanguageForDescriptions(IsaacMetadataAuxiliaryBinding.ENGLISH);
+        conceptBuilderService.setDefaultDialectAssemblageForDescriptions(IsaacMetadataAuxiliaryBinding.US_ENGLISH_DIALECT);
+        conceptBuilderService.setDefaultLogicCoordinate(logicCoordinate);
+        ConceptBuilder builder = conceptBuilderService.getDefaultConceptBuilder(
+                uuidForNewConcept.toString(), "expression", expression);
+        
+        ChronicledConcept concept = builder.build(editCoordinate, ChangeCheckerMode.INACTIVE);
+        try {
+            getCommitService().commit("Expression commit.").get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
+        return concept.getConceptSequence();
     }
 
 }
