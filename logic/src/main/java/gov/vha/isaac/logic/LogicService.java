@@ -15,7 +15,7 @@
  */
 package gov.vha.isaac.logic;
 
-import gov.vha.isaac.ochre.api.ClassifierService;
+import gov.vha.isaac.ochre.api.classifier.ClassifierService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;

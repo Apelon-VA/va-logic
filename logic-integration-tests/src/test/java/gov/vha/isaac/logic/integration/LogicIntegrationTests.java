@@ -7,20 +7,27 @@ package gov.vha.isaac.logic.integration;
 
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.identifier.IdentifierProvider;
+import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.LogicService;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.DataSource;
+import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
+import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.concept.ConceptBuilderService;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
@@ -33,7 +40,13 @@ import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
+import gov.vha.isaac.ochre.api.sememe.SememeService;
+import gov.vha.isaac.ochre.api.sememe.SememeSnapshotService;
+import gov.vha.isaac.ochre.api.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,18 +68,26 @@ import org.testng.annotations.Test;
 public class LogicIntegrationTests {
 
     private static final Logger log = LogManager.getLogger();
-    private static IdentifierProvider sequenceProvider;
+    private static IdentifierProvider identifierProvider;
     private static TaxonomyService taxonomyProvider;
     private static CommitService commitProvider;
+    private static IdentifiedObjectService identifiedObjectProvider;
 
-    /**
-     * @return the sequenceProvider
-     */
-    public static IdentifierProvider getSequenceService() {
-        if (sequenceProvider == null) {
-            sequenceProvider = LookupService.getService(IdentifierProvider.class);
+    
+     public static IdentifiedObjectService getIdentifiedObjectService() {
+        if (identifiedObjectProvider == null) {
+            identifiedObjectProvider = LookupService.getService(IdentifiedObjectService.class);
         }
-        return sequenceProvider;
+        return identifiedObjectProvider;
+    }
+   /**
+     * @return the identifierProvider
+     */
+    public static IdentifierProvider getIdentifierService() {
+        if (identifierProvider == null) {
+            identifierProvider = LookupService.getService(IdentifierProvider.class);
+        }
+        return identifierProvider;
     }
 
     /**
@@ -84,7 +105,14 @@ public class LogicIntegrationTests {
         }
         return commitProvider;
     }
-    
+
+    private static SememeService sememeService;
+    public static SememeService getSememeService() {
+        if (sememeService == null) {
+            sememeService = LookupService.getService(SememeService.class);
+        }
+        return sememeService;
+    }    
     private boolean dbExists = false;
 
     @BeforeSuite
@@ -134,8 +162,10 @@ public class LogicIntegrationTests {
             logic.initialize(LogicCoordinates.getStandardElProfile());
         }
 
-        logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
+        ClassifierResults results = logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
+        log.info(results);
+        logResultDetails(results, StampCoordinates.getDevelopmentLatest());
         
         // Add new concept and definition here to classify. 
         ConceptBuilderService conceptBuilderService = LookupService.getService(ConceptBuilderService.class);
@@ -155,14 +185,19 @@ public class LogicIntegrationTests {
         ConceptBuilder builder = conceptBuilderService.getDefaultConceptBuilder(
                 "primitive child of bleeding", "test concept", def);
         
-        ChronicledConcept concept = builder.build(EditCoordinates.getDefaultUserSolorOverlay(), ChangeCheckerMode.ACTIVE);
+        List createdComponents = new ArrayList();
+        ChronicledConcept concept = builder.build(EditCoordinates.getDefaultUserSolorOverlay(), ChangeCheckerMode.ACTIVE, createdComponents);
+        
+        for (Object component: createdComponents) {
+            component.toString();
+        }
         
         getCommitService().commit("Commit for logic integration incremental classification test. ").get();
         ConceptSequenceSet newConcepts = new ConceptSequenceSet();
         newConcepts.add(concept.getConceptSequence());
-        logic.incrementalClassification(StampCoordinates.getDevelopmentLatest(), 
+        results = logic.incrementalClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay(), newConcepts);
-        
+        log.info(results);
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
     }
@@ -213,6 +248,36 @@ public class LogicIntegrationTests {
 
         log.info("  concepts in map: {}", ps.getConceptCount());
 
-        log.info("  sequences map: {}", getSequenceService().getConceptSequenceStream().distinct().count());
+        log.info("  sequences map: {}", getIdentifierService().getConceptSequenceStream().distinct().count());
+    }
+
+    private void logResultDetails(ClassifierResults results, StampCoordinate stampCoordinate) {
+        StringBuilder builder = new StringBuilder();
+        SememeSnapshotService<LogicGraphSememe> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememe.class, stampCoordinate);
+        results.getEquivalentSets().forEach((conceptSequenceSet) -> {
+            builder.append("--------- Equivalent Set ---------\n");
+            conceptSequenceSet.stream().forEach((conceptSequence) -> {
+                int conceptNid = getIdentifierService().getConceptNid(conceptSequence);
+                Optional<IdentifiedObjectLocal> optionalConcept = getIdentifiedObjectService().getIdentifiedObject(conceptNid);
+                builder.append(conceptSequence);
+                if (optionalConcept.isPresent()) {
+                    builder.append(" ");
+                    builder.append(optionalConcept.get().toString());
+                }
+                builder.append(":\n ");
+                
+                sememeSnapshot.getLatestActiveSememeVersionsForComponentFromAssemblage(conceptNid, 
+                        LogicCoordinates.getStandardElProfile().getStatedAssemblageSequence())
+                        .forEach((LatestVersion<LogicGraphSememe> logicGraphSememe) -> {
+                            LogicGraph graph = new LogicGraph(logicGraphSememe.value().getGraphData(), 
+                                    DataSource.INTERNAL);
+                            builder.append(graph.toString());
+                        
+                        });
+                
+            });
+        });
+        
+        log.info(builder.toString());
     }
 }
