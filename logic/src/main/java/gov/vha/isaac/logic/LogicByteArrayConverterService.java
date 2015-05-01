@@ -5,9 +5,11 @@
  */
 package gov.vha.isaac.logic;
 
+
+
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
-import gov.vha.isaac.ochre.api.LogicByteArrayConverter;
+import gov.vha.isaac.ochre.api.logic.LogicByteArrayConverter;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -33,5 +35,4 @@ public class LogicByteArrayConverterService implements LogicByteArrayConverter {
         
         return logicGraph.pack(dataTarget);
     }
-    
 }
