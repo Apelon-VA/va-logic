@@ -15,10 +15,10 @@
  */
 package gov.vha.isaac.logic;
 
-import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
-import gov.vha.isaac.ochre.api.commit.ChangeListener;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +27,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author kec
  */
-public class LogicServiceChangeListener implements ChangeListener {
+public class LogicServiceChangeListener implements ChronologyChangeListener {
     private static final Logger log = LogManager.getLogger();
     
     private final UUID listenerUuid = UUID.randomUUID();
@@ -46,12 +46,12 @@ public class LogicServiceChangeListener implements ChangeListener {
     }
 
     @Override
-    public void handleChange(ChronicledConcept cc) {
+    public void handleChange(ConceptChronology cc) {
         // Nothing to do...
     }
 
     @Override
-    public void handleChange(SememeChronicle sc) {
+    public void handleChange(SememeChronology sc) {
         if (sc.getAssemblageSequence() == logicCoordinate.getStatedAssemblageSequence()) {
             log.info("Stated form change: " + sc);
         } else if (sc.getAssemblageSequence() == logicCoordinate.getInferredAssemblageSequence()) {

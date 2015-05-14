@@ -19,14 +19,14 @@ import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
-import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
-import gov.vha.isaac.ochre.api.concept.ConceptBuilder;
-import gov.vha.isaac.ochre.api.concept.ConceptBuilderService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
+import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
@@ -40,9 +40,9 @@ import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
-import gov.vha.isaac.ochre.api.sememe.SememeService;
-import gov.vha.isaac.ochre.api.sememe.SememeSnapshotService;
-import gov.vha.isaac.ochre.api.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
+import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -186,7 +186,7 @@ public class LogicIntegrationTests {
                 "primitive child of bleeding", "test concept", def);
         
         List createdComponents = new ArrayList();
-        ChronicledConcept concept = builder.build(EditCoordinates.getDefaultUserSolorOverlay(), ChangeCheckerMode.ACTIVE, createdComponents);
+        ConceptChronology concept = builder.build(EditCoordinates.getDefaultUserSolorOverlay(), ChangeCheckerMode.ACTIVE, createdComponents);
         
         for (Object component: createdComponents) {
             component.toString();

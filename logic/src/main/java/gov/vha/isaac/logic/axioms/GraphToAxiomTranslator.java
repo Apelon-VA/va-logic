@@ -33,7 +33,7 @@ import gov.vha.isaac.logic.node.RootNode;
 import gov.vha.isaac.logic.node.SufficientSetNode;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.collections.ConcurrentSequenceObjectMap;
 import java.util.Calendar;
 import java.util.Optional;
