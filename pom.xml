@@ -4,19 +4,23 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.5</version>
+        <version>1.6</version>
     </parent>
     
     <groupId>gov.vha.isaac.logic</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.11</version>
+    <version>1.12</version>
     <name>${project.artifactId}: (MMP)</name>
     <packaging>pom</packaging>
     
+    <scm>
+        <url>https://github.com/Apelon-VA/va-logic.git</url>
+    </scm>
+    
     <properties>
-        <ochre.version>2.26</ochre.version>
-        <isaac-metadata.version>1.28</isaac-metadata.version>
-        <newtons-cradle.version>1.16</newtons-cradle.version>
+        <ochre.version>2.27</ochre.version>
+        <isaac-metadata.version>1.29</isaac-metadata.version>
+        <newtons-cradle.version>1.17</newtons-cradle.version>
         <snorocket-core.version>2.5.7</snorocket-core.version>
     </properties>
     

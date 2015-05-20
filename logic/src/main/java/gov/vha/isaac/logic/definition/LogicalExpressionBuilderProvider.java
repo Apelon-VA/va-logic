@@ -15,9 +15,8 @@
  */
 package gov.vha.isaac.logic.definition;
 
-import gov.vha.isaac.logic.definition.LogicalDefinitionBuilderImpl;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilder;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilderService;
+import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
+import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -25,11 +24,15 @@ import org.jvnet.hk2.annotations.Service;
  * @author kec
  */
 @Service
-public class LogicalDefinitionBuilderProvider implements LogicalDefinitionBuilderService {
+public class LogicalExpressionBuilderProvider implements LogicalExpressionBuilderService {
+
+    public LogicalExpressionBuilderProvider() {
+    }
 
     @Override
-    public LogicalDefinitionBuilder getBuilder() {
-        return new LogicalDefinitionBuilderImpl();
+    public LogicalExpressionBuilder getLogicalExpressionBuilder() {
+        return new LogicalExpressionBuilderImpl();
     }
-    
+
+
 }

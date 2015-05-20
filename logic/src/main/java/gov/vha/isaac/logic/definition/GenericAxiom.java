@@ -16,7 +16,7 @@
 package gov.vha.isaac.logic.definition;
 
 import gov.vha.isaac.logic.NodeSemantic;
-import gov.vha.isaac.ochre.api.logic.LogicalDefinitionBuilder;
+import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
 import gov.vha.isaac.ochre.api.logic.assertions.AllRole;
 import gov.vha.isaac.ochre.api.logic.assertions.ConceptAssertion;
 import gov.vha.isaac.ochre.api.logic.assertions.Feature;
@@ -48,18 +48,18 @@ public class GenericAxiom implements NecessarySet, SufficientSet, And, DisjointW
         FloatLiteral, InstantLiteral, IntegerLiteral, StringLiteral, BooleanSubstitution,
         ConceptSubstitution, FloatSubstitution, InstantSubstitution, IntegerSubstitution,
         StringSubstitution {
-    private final LogicalDefinitionBuilderImpl builder;
+    private final LogicalExpressionBuilder builder;
     private final short index;
     private final NodeSemantic semantic;
 
-    public GenericAxiom(NodeSemantic semantic, LogicalDefinitionBuilderImpl builder) {
+    public GenericAxiom(NodeSemantic semantic, LogicalExpressionBuilderImpl builder) {
         this.builder = builder;
         this.index = builder.getNextAxiomIndex();
         this.semantic = semantic;
     }
     
     @Override
-    public LogicalDefinitionBuilder getBuilder() {
+    public LogicalExpressionBuilder getBuilder() {
         return builder;
     }
 

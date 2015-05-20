@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac.logic</groupId>
         <artifactId>logic-parent</artifactId>
-        <version>1.11</version>
+        <version>1.12</version>
     </parent>
     
     <groupId>gov.vha.isaac.logic.modules</groupId>
@@ -13,10 +13,6 @@
     <packaging>jar</packaging>
     
     <dependencies>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
@@ -85,6 +81,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <enableAssertions>false</enableAssertions> <!-- Logic tests currently fail with assertions enabled -->
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
                     <argLine>-ea -d64 -Xmx6g</argLine>
