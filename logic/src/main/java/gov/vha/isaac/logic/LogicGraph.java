@@ -24,7 +24,6 @@ import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.ihtsdo.otf.tcc.api.conattr.ConceptAttributeVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
-
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -215,20 +214,19 @@ public class LogicGraph implements LogicalExpression {
             int roleGroupNid) throws IOException, ContradictionException {
         setupIsa();
         RelAssertionType relAssertionType = conceptVersion.getViewCoordinate().getRelationshipAssertionType();
-        ConceptAttributeVersionBI cav = conceptVersion.getConceptAttributes().getVersion(conceptVersion.getViewCoordinate());
-        if (cav == null) {
-            throw new IllegalStateException("No attributes on concept: \n"
-                    + conceptVersion.toLongString());
+        Optional<? extends ConceptAttributeVersionBI> cav = conceptVersion.getConceptAttributes().getVersion(conceptVersion.getViewCoordinate());
+        if (!cav.isPresent()) {
+            throw new IllegalStateException("No attributes on concept: \n" + conceptVersion.toLongString());
         }
-        if (!cav.isActive()) {
-            conceptVersion.isActive();
-            cav.isActive();
+        if (!cav.get().isActive()) {
+            conceptVersion.isActive();  //TODO what is going on here?
+            cav.get().isActive();
             throw new IllegalStateException("Trying to create logic graph on inactive concept: \n"
                     + conceptVersion.toLongString());
         }
         RootNode root = getRoot();
         AndNode andNode = And();
-        if (cav.isDefined()) {
+        if (cav.get().isDefined()) {
             root.addChildren(SufficientSet(andNode));
         } else {
             root.addChildren(NecessarySet(andNode));
