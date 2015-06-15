@@ -5,7 +5,6 @@
  */
 package gov.vha.isaac.logic.integration;
 
-import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.identifier.IdentifierProvider;
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.LogicService;
@@ -14,19 +13,23 @@ import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.ConceptModel;
+import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
@@ -53,7 +56,6 @@ import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.MultiException;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.testing.hk2testng.HK2;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
@@ -72,6 +74,14 @@ public class LogicIntegrationTests {
     private static TaxonomyService taxonomyProvider;
     private static CommitService commitProvider;
     private static IdentifiedObjectService identifiedObjectProvider;
+    private static ConceptService conceptService;
+    
+    public static ConceptService getConceptService() {
+        if (conceptService == null) {
+            conceptService = LookupService.getService(ConceptService.class);
+        }
+        return conceptService;
+    }
 
     
      public static IdentifiedObjectService getIdentifiedObjectService() {
@@ -142,30 +152,30 @@ public class LogicIntegrationTests {
     public void testLoad() throws Exception {
 
         log.info("  Testing load...");
-        ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
-        PersistentStoreI ps = LookupService.getService(PersistentStoreI.class);
-
         String mapDbFolder = System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY);
         if (mapDbFolder == null || mapDbFolder.isEmpty()) {
             throw new IllegalStateException(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY + " has not been set.");
         }
 
-        CradleExtensions mapDbService = (CradleExtensions) ps;
 
         if (!dbExists) {
-            loadDatabase(tts, mapDbService);
+            loadDatabase();
         }
         
         LogicService logic = LookupService.getService(LogicService.class);
 
         if (!dbExists) {
-            logic.initialize(LogicCoordinates.getStandardElProfile());
+            if (LookupService.getService(ConfigurationService.class).getConceptModel() == ConceptModel.OTF_CONCEPT_MODEL) {
+                logic.initialize(LogicCoordinates.getStandardElProfile());
+            }
         }
 
         ClassifierResults results = logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
         log.info(results);
         logResultDetails(results, StampCoordinates.getDevelopmentLatest());
+        
+        
         
         // Add new concept and definition here to classify. 
         ConceptBuilderService conceptBuilderService = LookupService.getService(ConceptBuilderService.class);
@@ -174,10 +184,14 @@ public class LogicIntegrationTests {
         conceptBuilderService.setDefaultLogicCoordinate(LogicCoordinates.getStandardElProfile());
         
         
-        LogicalExpressionBuilderService expressionBuilderService = LookupService.getService(LogicalExpressionBuilderService.class);
+        LogicalExpressionBuilderService expressionBuilderService = 
+                LookupService.getService(LogicalExpressionBuilderService.class);
         LogicalExpressionBuilder defBuilder = expressionBuilderService.getLogicalExpressionBuilder();
         
-        NecessarySet(And(ConceptAssertion(Snomed.BLEEDING_FINDING, defBuilder)));
+        NecessarySet(And(ConceptAssertion(getConceptService().getConcept(Snomed.BLEEDING_FINDING.getSequence()), defBuilder)));
+        
+        
+        
         
         LogicalExpression def = defBuilder.build();
         log.info("Created definition:\n\n " + def);
@@ -202,7 +216,9 @@ public class LogicIntegrationTests {
         //exportLogicGraphDatabase(tts);
     }
     
-    private void exportDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException {
+    private void exportDatabase() throws InterruptedException, ExecutionException {
+        ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
+
         Path logicExportFile = Paths.get("target/logicExportFile.econ");
         Instant start = Instant.now();
         Task<Integer> exportTask = tts.startExportTask(logicExportFile);
@@ -215,7 +231,9 @@ public class LogicIntegrationTests {
         double nsPerConcept = 1.0d * duration.toNanos() / conceptCount;
         log.info("  nsPerConcept: {}", nsPerConcept);
     }
-   private void exportLogicGraphDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException {
+   private void exportLogicGraphDatabase() throws InterruptedException, ExecutionException {
+        ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
+
         Path logicExportFile = Paths.get("target/logicGraphExportFile.econ");
         Instant start = Instant.now();
         Task<Integer> exportTask = tts.startLogicGraphExportTask(logicExportFile);
@@ -229,7 +247,9 @@ public class LogicIntegrationTests {
         log.info("  nsPerConcept: {}", nsPerConcept);
     }
 
-    private void loadDatabase(ObjectChronicleTaskService tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
+    private void loadDatabase() throws ExecutionException, IOException, MultiException, InterruptedException {
+        ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
+
         Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
         Path logicMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
@@ -246,7 +266,7 @@ public class LogicIntegrationTests {
         double msPerConcept = 1.0d * duration.toMillis() / conceptCount;
         log.info("  msPerConcept: {}", msPerConcept);
 
-        log.info("  concepts in map: {}", ps.getConceptCount());
+        log.info("  concepts in map: {}", LookupService.getService(ConceptService.class).getConceptCount());
 
         log.info("  sequences map: {}", getIdentifierService().getConceptSequenceStream().distinct().count());
     }
@@ -258,7 +278,7 @@ public class LogicIntegrationTests {
             builder.append("--------- Equivalent Set ---------\n");
             conceptSequenceSet.stream().forEach((conceptSequence) -> {
                 int conceptNid = getIdentifierService().getConceptNid(conceptSequence);
-                Optional<IdentifiedObjectLocal> optionalConcept = getIdentifiedObjectService().getIdentifiedObject(conceptNid);
+                Optional<? extends ObjectChronology<? extends StampedVersion>> optionalConcept = getIdentifiedObjectService().getIdentifiedObjectChronology(conceptNid);
                 builder.append(conceptSequence);
                 if (optionalConcept.isPresent()) {
                     builder.append(" ");

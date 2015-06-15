@@ -11,11 +11,13 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  * Created by kec on 12/6/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public final class RoleNodeAllWithNids extends TypedNodeWithNids {
 
     public RoleNodeAllWithNids(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {
@@ -44,19 +46,7 @@ public final class RoleNodeAllWithNids extends TypedNodeWithNids {
     public NodeSemantic getNodeSemantic() {
         return NodeSemantic.ROLE_ALL;
     }
-    
-    @Override
-    protected UUID initNodeUuid() {
-        if (getIsaacDb().isPresent()) {
-            try {
-                return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
-                        getIsaacDb().get().getUuidPrimordialForNid(typeConceptNid).toString());
-            } catch (IOException| NoSuchAlgorithmException ex) {
-                throw new RuntimeException(ex);
-            } 
-        }
-        return null;
-     }
+
 
     @Override
     public String toString() {

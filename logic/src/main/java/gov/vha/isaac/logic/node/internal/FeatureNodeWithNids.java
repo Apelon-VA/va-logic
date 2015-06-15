@@ -1,6 +1,6 @@
 package gov.vha.isaac.logic.node.internal;
 
-import gov.vha.isaac.logic.ConcreteDomainOperators;
+import gov.vha.isaac.ochre.model.logic.ConcreteDomainOperators;
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.NodeSemantic;
 import gov.vha.isaac.logic.node.AbstractNode;
@@ -12,11 +12,13 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  * Created by kec on 12/9/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public final class FeatureNodeWithNids extends TypedNodeWithNids {
 
     static ConcreteDomainOperators[] concreteDomainOperators = ConcreteDomainOperators.values();
@@ -37,7 +39,7 @@ public final class FeatureNodeWithNids extends TypedNodeWithNids {
     public FeatureNodeWithNids(FeatureNodeWithUuids externalForm) {
         super(externalForm);
         operator = externalForm.getOperator();
-        unitsConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getUnitsConceptUuid());
+        unitsConceptNid = getIdentifierService().get().getNidForUuids(externalForm.getUnitsConceptUuid());
     }
 
     @Override
@@ -64,15 +66,14 @@ public final class FeatureNodeWithNids extends TypedNodeWithNids {
     
     @Override
     protected UUID initNodeUuid() {
-        if (getIsaacDb().isPresent()) {
-            try {
+        if (getIdentifierService().isPresent()) {
+             try {
                 return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
-                        getIsaacDb().get().getUuidPrimordialForNid(typeConceptNid).toString() +
-                                operator + 
-                                getIsaacDb().get().getUuidPrimordialForNid(unitsConceptNid).toString());
-            } catch (IOException| NoSuchAlgorithmException ex) {
+                        getIdentifierService().get().getUuidPrimordialForNid(unitsConceptNid).toString() +
+                        getIdentifierService().get().getUuidPrimordialForNid(typeConceptNid).toString());
+            } catch (IOException | NoSuchAlgorithmException ex) {
                 throw new RuntimeException(ex);
-            } 
+            }
         }
         return null;
      }

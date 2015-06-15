@@ -12,13 +12,15 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  * A node that specifies a template to be substituted in place of this node, and the
  * assemblage concept that will be used to fill template substitution values.
  * Created by kec on 12/10/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public final class TemplateNodeWithNids extends AbstractNode {
 
     /**
@@ -46,8 +48,8 @@ public final class TemplateNodeWithNids extends AbstractNode {
 
     public TemplateNodeWithNids(TemplateNodeWithUuids externalForm) {
         super(externalForm);
-        this.templateConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getTemplateConceptUuid());
-        this.assemblageConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getAssemblageConceptUuid());
+        this.templateConceptNid = getIdentifierService().get().getNidForUuids(externalForm.getTemplateConceptUuid());
+        this.assemblageConceptNid = getIdentifierService().get().getNidForUuids(externalForm.getAssemblageConceptUuid());
     }
 
     @Override
@@ -118,13 +120,13 @@ public final class TemplateNodeWithNids extends AbstractNode {
         result = 31 * result + assemblageConceptNid;
         return result;
     }
-        @Override
+    @Override
     protected UUID initNodeUuid() {
-        if (getIsaacDb().isPresent()) {
+        if (getConceptService().isPresent()) {
             try {
                 return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
-                        getIsaacDb().get().getUuidPrimordialForNid(assemblageConceptNid).toString() +
-                        getIsaacDb().get().getUuidPrimordialForNid(templateConceptNid).toString());
+                        getIdentifierService().get().getUuidPrimordialForNid(assemblageConceptNid).toString() +
+                        getIdentifierService().get().getUuidPrimordialForNid(templateConceptNid).toString());
             } catch (IOException| NoSuchAlgorithmException ex) {
                 throw new RuntimeException(ex);
             } 

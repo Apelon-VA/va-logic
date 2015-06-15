@@ -18,7 +18,9 @@ import java.util.UUID;
 /**
  *
  * @author kec
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public abstract class TypedNodeWithUuids extends ConnectorNode {
 
     UUID typeConceptUuid;
@@ -35,11 +37,7 @@ public abstract class TypedNodeWithUuids extends ConnectorNode {
 
     public TypedNodeWithUuids(TypedNodeWithNids internalForm) {
         super(internalForm);
-        try {
-            this.typeConceptUuid = getIsaacDb().get().getUuidPrimordialForNid(internalForm.getTypeConceptNid());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.typeConceptUuid = getIdentifierService().get().getUuidPrimordialForNid(internalForm.getTypeConceptNid()).get();
     }
 
     public UUID getTypeConceptUuid() {

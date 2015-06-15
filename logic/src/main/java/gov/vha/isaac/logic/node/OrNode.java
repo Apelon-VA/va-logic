@@ -11,7 +11,9 @@ import java.util.UUID;
 
 /**
  * Created by kec on 12/10/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class OrNode extends ConnectorNode {
 
     public OrNode(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {

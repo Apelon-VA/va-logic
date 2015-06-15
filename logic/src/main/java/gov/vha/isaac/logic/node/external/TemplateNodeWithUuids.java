@@ -9,7 +9,6 @@ import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.Node;
 import gov.vha.isaac.logic.NodeSemantic;
 import gov.vha.isaac.logic.node.AbstractNode;
-import gov.vha.isaac.logic.node.internal.FeatureNodeWithNids;
 import gov.vha.isaac.logic.node.internal.TemplateNodeWithNids;
 import gov.vha.isaac.ochre.api.DataTarget;
 import java.io.DataInputStream;
@@ -17,14 +16,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  *
  * @author kec
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class TemplateNodeWithUuids extends AbstractNode {
 
     /**
@@ -52,12 +51,8 @@ public class TemplateNodeWithUuids extends AbstractNode {
 
     public TemplateNodeWithUuids(TemplateNodeWithNids internalForm) {
         super(internalForm);
-        try {
-            this.templateConceptUuid = getIsaacDb().get().getUuidPrimordialForNid(internalForm.getTemplateConceptNid());
-            this.assemblageConceptUuid = getIsaacDb().get().getUuidPrimordialForNid(internalForm.getAssemblageConceptNid());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.templateConceptUuid = getIdentifierService().get().getUuidPrimordialForNid(internalForm.getTemplateConceptNid()).get();
+        this.assemblageConceptUuid = getIdentifierService().get().getUuidPrimordialForNid(internalForm.getAssemblageConceptNid()).get();
     }
 
 

@@ -20,7 +20,7 @@ import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
-import gov.vha.isaac.logic.classify.ClassifierData;
+import gov.vha.isaac.csiro.classify.ClassifierData;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
@@ -53,29 +53,26 @@ import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
-import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
+import gov.vha.isaac.ochre.model.logic.LogicExpressionOchreImpl;
+import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
@@ -242,7 +239,7 @@ public class LogicProvider implements LogicService {
                 ConceptChronicle conceptChronicle = ConceptChronicle.get(conceptChronicleDataEager.getNid(), conceptChronicleDataEager);
 
                 logicGraphMembers.incrementAndGet();
-                SememeChronicleImpl<LogicGraphSememeImpl> logicGraphChronicle = null;
+                SememeChronologyImpl<LogicGraphSememeImpl> logicGraphChronicle = null;
                 LogicGraph lastLogicGraph = null;
                 for (Position position : conceptChronicle.getPositions()) {
                     ViewCoordinate vcForPosition = new ViewCoordinate(UUID.randomUUID(),
@@ -278,7 +275,7 @@ public class LogicProvider implements LogicService {
                                     UUID primordialUuid = UUID.randomUUID();
                                     int nid = cradleService.getNidForUuids(primordialUuid);
                                     int containerSequence = getIdentifierService().getSememeSequence(nid);
-                                    logicGraphChronicle = new SememeChronicleImpl<>(
+                                    logicGraphChronicle = new SememeChronologyImpl<>(
                                             SememeType.LOGIC_GRAPH,
                                             primordialUuid,
                                             nid,
@@ -287,11 +284,11 @@ public class LogicProvider implements LogicService {
                                             containerSequence
                                     );
 
-                                    int stampSequence = getCommitService().getStamp(State.ACTIVE, position.getTime(),
+                                    int stampSequence = getCommitService().getStampSequence(State.ACTIVE, position.getTime(),
                                             ec.getAuthorSequence(), ec.getModuleSequence(),
                                             ec.getPathSequence());
 
-                                    LogicGraphSememeImpl mutable = logicGraphChronicle.createMutableStampedVersion(
+                                    LogicGraphSememeImpl mutable = logicGraphChronicle.createMutableVersion(
                                             LogicGraphSememeImpl.class, stampSequence);
 
                                     mutable.setGraphData(logicGraphBytes);
@@ -299,10 +296,10 @@ public class LogicProvider implements LogicService {
 
                                 } else if (!logicGraph.equals(lastLogicGraph)) {
                                     logicGraphVersions.incrementAndGet();
-                                    int stampSequence = getCommitService().getStamp(State.ACTIVE, position.getTime(),
+                                    int stampSequence = getCommitService().getStampSequence(State.ACTIVE, position.getTime(),
                                             ec.getAuthorSequence(), ec.getModuleSequence(),
                                             ec.getPathSequence());
-                                    LogicGraphSememeImpl mutable = logicGraphChronicle.createMutableStampedVersion(
+                                    LogicGraphSememeImpl mutable = logicGraphChronicle.createMutableVersion(
                                             LogicGraphSememeImpl.class, stampSequence);
                                     mutable.setGraphData(logicGraphBytes);
                                 }
@@ -376,7 +373,7 @@ public class LogicProvider implements LogicService {
         }
     }
 
-    public void printIfMoreRevisions(SememeChronicleImpl<LogicGraphSememeImpl> logicGraphMember, AtomicInteger maxGraphVersionsPerMember, ConceptChronicle conceptChronicle, AtomicInteger maxGraphSize) {
+    public void printIfMoreRevisions(SememeChronologyImpl<LogicGraphSememeImpl> logicGraphMember, AtomicInteger maxGraphVersionsPerMember, ConceptChronicle conceptChronicle, AtomicInteger maxGraphSize) {
         if (logicGraphMember.getVersionList() != null) {
             Collection<LogicGraphSememeImpl> versions = (Collection<LogicGraphSememeImpl>) logicGraphMember.getVersionList();
             int versionCount = versions.size();
@@ -437,11 +434,11 @@ public class LogicProvider implements LogicService {
         log.info("     Start axiom construction.");
         Instant axiomConstructionStart = Instant.now();
         ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
-        log.info("     classifier data before: " + cd);
+        log.info("     classifier data before: \n" + cd);
         processAllStatedAxioms(stampCoordinate, logicCoordinate,
                 cd, logicGraphMembers);
         Instant axiomConstructionEnd = Instant.now();
-        log.info("     classifier data after: " + cd);
+        log.info("     classifier data after: \n" + cd);
         Duration axiomConstructionDuration = Duration.between(axiomConstructionStart, axiomConstructionEnd);
         log.info("     Finished axiom construction. LogicGraphMembers: " + logicGraphMembers);
         log.info("     Axiom construction duration: " + axiomConstructionDuration);
@@ -471,6 +468,7 @@ public class LogicProvider implements LogicService {
         Duration classifyDuration = Duration.between(classifyStart, classifyEnd);
         log.info("  Finished classify. LogicGraphMembers: " + logicGraphMembers);
         log.info("  Classify duration: " + classifyDuration);
+
         return classifierResults;
     }
 
@@ -490,6 +488,7 @@ public class LogicProvider implements LogicService {
                 equivalentConcepts.forEach((conceptSequence) -> {
                     try {
                         affectedConcepts.add(Integer.parseInt(conceptSequence));
+
                     } catch (NumberFormatException numberFormatException) {
                         if (conceptSequence.equals("_BOTTOM_")
                                 || conceptSequence.equals("_TOP_")) {
@@ -662,75 +661,42 @@ public class LogicProvider implements LogicService {
     }
 
     @Override
-    public Optional<LatestVersion<LogicGraph>> getLogicGraph(int conceptId, int logicAssemblageId,
+    public Optional<LatestVersion<LogicExpressionOchreImpl>> getLogicGraph(int conceptId, int logicAssemblageId,
             StampCoordinate stampCoordinate) {
         SememeSnapshotService<LogicGraphSememeImpl> ssp
                 = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
 
-        Stream<LatestVersion<LogicGraphSememeImpl>> latestVersions
+        List<LatestVersion<LogicExpressionOchreImpl>> latestVersions
                 = ssp.getLatestActiveSememeVersionsForComponentFromAssemblage(
-                        conceptId, logicAssemblageId);
+                        conceptId, logicAssemblageId).map((LatestVersion<LogicGraphSememeImpl> lgs) -> {
+                            LogicExpressionOchreImpl expressionValue
+                            = new LogicExpressionOchreImpl(lgs.value().getGraphData(), DataSource.INTERNAL, lgs.value().getReferencedComponentNid());
+                            LatestVersion<LogicExpressionOchreImpl> latestExpressionValue = new LatestVersion<>(expressionValue);
 
-        LatestVersion<LogicGraph> latest = latestVersions.collect(new LogicGraphCollector());
-        if (latest.value() == null) {
+                            if (lgs.contradictions().isPresent()) {
+                                lgs.contradictions().get().forEach((LogicGraphSememeImpl contradiction) -> {
+                                    LogicExpressionOchreImpl contradictionValue
+                                    = new LogicExpressionOchreImpl(contradiction.getGraphData(), DataSource.INTERNAL, contradiction.getReferencedComponentNid());
+                                    latestExpressionValue.addLatest(contradictionValue);
+                                });
+                            }
+
+                            return latestExpressionValue;
+                        }).collect(Collectors.toList());
+
+        if (latestVersions.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(latest);
-    }
 
-    private static class LogicGraphCollector implements Collector<LatestVersion<LogicGraphSememeImpl>, LatestVersion<LogicGraph>, LatestVersion<LogicGraph>> {
-
-        @Override
-        public Set<Characteristics> characteristics() {
-            return EnumSet.of(Characteristics.CONCURRENT, Characteristics.UNORDERED);
+        if (latestVersions.size() > 1) {
+            throw new IllegalStateException("More than one LogicGraphSememeImpl for concept in assemblage: "
+                    + latestVersions);
         }
-
-        @Override
-        public Supplier<LatestVersion<LogicGraph>> supplier() {
-            return LatestVersion::new;
-        }
-
-        @Override
-        public BiConsumer<LatestVersion<LogicGraph>, LatestVersion<LogicGraphSememeImpl>> accumulator() {
-            return (latestGraph, latestSememe) -> {
-                latestGraph.addLatest(new LogicGraph(latestSememe.value().getGraphData(),
-                        DataSource.INTERNAL,
-                        latestSememe.value().getReferencedComponentNid()));
-                if (latestSememe.contradictions().isPresent()) {
-                    latestSememe.contradictions().get().stream().forEach((sememe) -> {
-                        latestGraph.addLatest(new LogicGraph(sememe.getGraphData(),
-                                DataSource.INTERNAL,
-                                sememe.getReferencedComponentNid()));
-                    });
-                }
-            };
-
-        }
-
-        @Override
-        public BinaryOperator<LatestVersion<LogicGraph>> combiner() {
-            return (latest1, latest2) -> {
-
-                if (latest1.value() != latest2.value()) {
-                    latest1.addLatest(latest2.value());
-                }
-                if (latest2.contradictions().isPresent()) {
-                    latest2.contradictions().get().forEach((logicGraph)
-                            -> latest1.addLatest(logicGraph));
-                }
-
-                return latest1;
-            };
-        }
-
-        @Override
-        public Function<LatestVersion<LogicGraph>, LatestVersion<LogicGraph>> finisher() {
-            return Function.identity();
-        }
+        return Optional.of(latestVersions.get(0));
     }
 
     @Override
-    public int getConceptSequenceForExpression(LogicGraph expression,
+    public int getConceptSequenceForExpression(LogicalExpression expression,
             StampCoordinate stampCoordinate,
             LogicCoordinate logicCoordinate,
             EditCoordinate editCoordinate) {
@@ -741,7 +707,7 @@ public class LogicProvider implements LogicService {
                         logicCoordinate.getStatedAssemblageSequence()).
                 filter((LatestVersion<LogicGraphSememeImpl> t) -> {
                     LogicGraphSememeImpl lgs = t.value();
-                    LogicGraph existingGraph = new LogicGraph(lgs.getGraphData(), DataSource.INTERNAL);
+                    LogicExpressionOchreImpl existingGraph = new LogicExpressionOchreImpl(lgs.getGraphData(), DataSource.INTERNAL);
                     return existingGraph.equals(expression);
                 }).findFirst();
 

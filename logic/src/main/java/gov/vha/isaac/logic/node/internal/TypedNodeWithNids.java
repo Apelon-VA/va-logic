@@ -6,15 +6,20 @@ import gov.vha.isaac.logic.node.AbstractNode;
 import gov.vha.isaac.logic.node.ConnectorNode;
 import gov.vha.isaac.logic.node.external.TypedNodeWithUuids;
 import gov.vha.isaac.ochre.api.DataTarget;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Created by kec on 12/9/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public abstract class TypedNodeWithNids extends ConnectorNode {
 
     int typeConceptNid;
@@ -31,7 +36,7 @@ public abstract class TypedNodeWithNids extends ConnectorNode {
 
     public TypedNodeWithNids(TypedNodeWithUuids externalForm) {
         super(externalForm);
-        this.typeConceptNid = getIsaacDb().get().getNidForUuids(externalForm.getTypeConceptUuid());
+        this.typeConceptNid = getIdentifierService().get().getNidForUuids(externalForm.getTypeConceptUuid());
     }
 
     public int getTypeConceptNid() {
@@ -56,4 +61,19 @@ public abstract class TypedNodeWithNids extends ConnectorNode {
         }
         throw new IllegalStateException("Typed nodes can have only one child. Found: " + Arrays.toString(children));
     }
+    
+        
+    @Override
+    protected UUID initNodeUuid() {
+        if (getIdentifierService().isPresent()) {
+            try {
+                return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(),
+                        getIdentifierService().get().getUuidPrimordialForNid(typeConceptNid).toString());
+            } catch (IOException | NoSuchAlgorithmException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        return null;
+     }
+        
 }

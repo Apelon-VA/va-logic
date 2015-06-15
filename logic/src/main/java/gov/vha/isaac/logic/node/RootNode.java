@@ -11,7 +11,9 @@ import java.util.UUID;
 
 /**
  * Created by kec on 12/9/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class RootNode extends ConnectorNode {
 
     public RootNode(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {

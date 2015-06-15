@@ -34,8 +34,6 @@ import java.util.function.BiConsumer;
 import org.apache.mahout.math.list.IntArrayList;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelAssertionType;
-import org.ihtsdo.otf.tcc.api.store.TerminologyStoreDI;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
  * Created by kec on 12/6/14. 
@@ -49,6 +47,7 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
  * TODO Standard refset for never grouped roles 
  * 
  * TODO Standard refset for right identities
+ * @deprecated moved to ochre model project
  */
 public class LogicGraph implements LogicalExpression {
 
@@ -535,15 +534,6 @@ public class LogicGraph implements LogicalExpression {
 
     public final SubstitutionNodeString StringSubstitution(DataInputStream dataInputStream) throws IOException {
         return new SubstitutionNodeString(this, dataInputStream);
-    }
-
-    private static TerminologyStoreDI isaacDb;
-
-    private static TerminologyStoreDI getIsaacDb() {
-        if (isaacDb == null) {
-            isaacDb = Hk2Looker.getService(TerminologyStoreDI.class);
-        }
-        return isaacDb;
     }
 
     @Override

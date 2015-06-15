@@ -84,9 +84,9 @@
                     <enableAssertions>false</enableAssertions> <!-- Logic tests currently fail with assertions enabled -->
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
-                    <argLine>-ea -d64 -Xmx6g</argLine>
+                    <argLine>-ea -d64 -Xmx8g</argLine>
                     <!--argLine>-ea -d64 -XX:+UseCompressedOops -Xmx6g -Xms6g -Xbootclasspath/a:/Applications/jprofiler8/bin/agent.jar -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib</argLine-->
-                    <!--debugForkedProcess>true</debugForkedProcess-->
+<!--                    <debugForkedProcess>true</debugForkedProcess>-->
                     <includes>
                         <!-- Let JUnit annotations decide -->
                         <include>**/*.class</include>

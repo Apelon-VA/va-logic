@@ -5,7 +5,7 @@
  */
 package gov.vha.isaac.logic.node.external;
 
-import gov.vha.isaac.logic.ConcreteDomainOperators;
+import gov.vha.isaac.ochre.model.logic.ConcreteDomainOperators;
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.NodeSemantic;
 import gov.vha.isaac.logic.node.AbstractNode;
@@ -16,12 +16,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  *
  * @author kec
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class FeatureNodeWithUuids extends TypedNodeWithUuids {
 
     static ConcreteDomainOperators[] concreteDomainOperators = ConcreteDomainOperators.values();
@@ -41,7 +43,7 @@ public class FeatureNodeWithUuids extends TypedNodeWithUuids {
     public FeatureNodeWithUuids(FeatureNodeWithNids internalNode) throws IOException {
         super(internalNode);
         operator = internalNode.getOperator();
-        unitsConceptUuid = getIsaacDb().get().getUuidPrimordialForNid(internalNode.getUnitsConceptNid());
+        unitsConceptUuid = getIdentifierService().get().getUuidPrimordialForNid(internalNode.getUnitsConceptNid()).get();
     }
 
     @Override
@@ -69,7 +71,6 @@ public class FeatureNodeWithUuids extends TypedNodeWithUuids {
     
     @Override
     protected UUID initNodeUuid() {
-        if (getIsaacDb().isPresent()) {
             try {
                 return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
                         typeConceptUuid.toString() +
@@ -78,8 +79,6 @@ public class FeatureNodeWithUuids extends TypedNodeWithUuids {
             } catch (IOException| NoSuchAlgorithmException ex) {
                 throw new RuntimeException(ex);
             } 
-        }
-        return null;
      }
         
 

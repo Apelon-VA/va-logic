@@ -20,6 +20,8 @@ import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
+import gov.vha.isaac.ochre.model.logic.LogicExpressionOchreImpl;
 import java.util.Optional;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptVersion;
 import org.jvnet.hk2.annotations.Contract;
@@ -31,12 +33,13 @@ import org.jvnet.hk2.annotations.Contract;
 @Contract
 public interface LogicService extends ClassifierService {
     
+    @Deprecated
     LogicGraph createLogicGraph(ConceptVersion conceptVersion);
     
-    Optional<LatestVersion<LogicGraph>> getLogicGraph(int conceptId, int logicAssemblageId, 
+    Optional<LatestVersion<LogicExpressionOchreImpl>> getLogicGraph(int conceptId, int logicAssemblageId, 
             StampCoordinate stampCoordinate);
     
-    int getConceptSequenceForExpression(LogicGraph expression, 
+    int getConceptSequenceForExpression(LogicalExpression expression, 
             StampCoordinate stampCoordinate, 
             LogicCoordinate logicCoordinate, 
             EditCoordinate editCoordinate);

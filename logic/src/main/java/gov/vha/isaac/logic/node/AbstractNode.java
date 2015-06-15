@@ -2,25 +2,43 @@ package gov.vha.isaac.logic.node;
 
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.Node;
+import static gov.vha.isaac.logic.node.AbstractNode.conceptService;
 import gov.vha.isaac.ochre.api.DataTarget;
+import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 
 import java.io.*;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
-import org.ihtsdo.otf.tcc.api.store.TerminologyStoreDI;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
  * Created by kec on 12/10/14.
+ * @deprecated moved to ochre model project
  */
 public abstract class AbstractNode implements Node, Comparable<Node> {
 
     protected static final UUID namespaceUuid = UUID.fromString("d64c6d91-a37d-11e4-bcd8-0800200c9a66");
 
-    static TerminologyStoreDI isaacDb = null;
+    static ConceptService conceptService = null;
+    static IdentifierService identifierService = null;
+    protected Optional<IdentifierService> getIdentifierService() {
+        if (identifierService == null) {
+            identifierService = LookupService.getService(IdentifierService.class);
+        }
+        return Optional.ofNullable(identifierService);
+    } 
+ 
+    protected Optional<ConceptService> getConceptService() {
+        if (conceptService == null) {
+            conceptService = LookupService.getService(ConceptService.class);
+        }
+        return Optional.ofNullable(conceptService);
+    }
 
     LogicGraph logicGraphVersion;
     private short nodeIndex = Short.MIN_VALUE;
@@ -42,35 +60,21 @@ public abstract class AbstractNode implements Node, Comparable<Node> {
         this.nodeIndex = anotherNode.nodeIndex;
         this.nodeUuid = anotherNode.nodeUuid;
     }
- 
-    protected Optional<TerminologyStoreDI> getIsaacDb() {
-        if (isaacDb == null) {
-            isaacDb = Hk2Looker.getService(TerminologyStoreDI.class);
-        }
-        return Optional.ofNullable(isaacDb);
-    }
 
     public String getConceptChronicleText(UUID conceptUuid) {
 
-        if (getIsaacDb().isPresent()) {
-            try {
-                ConceptChronicleBI cc = getIsaacDb().get().getConcept(conceptUuid);
-                return cc.toString();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+        if (getConceptService().isPresent()) {
+            ConceptChronology<? extends StampedVersion> cc =
+                    getConceptService().get().getConcept(conceptUuid);
+            return cc.toUserString();
         }
         return conceptUuid.toString();
     }
     public String getConceptChronicleText(int conceptNid) {
-
-        if (getIsaacDb().isPresent()) {
-            try {
-                ConceptChronicleBI cc = getIsaacDb().get().getConcept(conceptNid);
-                return cc.toString();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+        if (getConceptService().isPresent()) {
+            ConceptChronology<? extends StampedVersion> cc =
+                    getConceptService().get().getConcept(conceptNid);
+            return cc.toUserString();
         }
         return Integer.toString(conceptNid);
     }

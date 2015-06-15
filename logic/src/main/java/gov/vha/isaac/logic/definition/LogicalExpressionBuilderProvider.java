@@ -15,15 +15,18 @@
  */
 package gov.vha.isaac.logic.definition;
 
+import gov.vha.isaac.ochre.api.DataSource;
+import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
-import org.jvnet.hk2.annotations.Service;
+import gov.vha.isaac.ochre.model.logic.LogicExpressionOchreImpl;
 
 /**
  *
  * @author kec
+ * @deprecated moved to ochre model project
  */
-@Service
 public class LogicalExpressionBuilderProvider implements LogicalExpressionBuilderService {
 
     public LogicalExpressionBuilderProvider() {
@@ -34,5 +37,9 @@ public class LogicalExpressionBuilderProvider implements LogicalExpressionBuilde
         return new LogicalExpressionBuilderImpl();
     }
 
+    @Override
+    public LogicalExpression fromSememe(LogicGraphSememe sememe) {
+        return new LogicExpressionOchreImpl(sememe.getGraphData(), DataSource.INTERNAL, sememe.getReferencedComponentNid());
+    }
 
 }

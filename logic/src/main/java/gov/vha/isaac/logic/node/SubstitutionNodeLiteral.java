@@ -8,7 +8,9 @@ import java.io.IOException;
 
 /**
  * Created by kec on 12/12/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public abstract class SubstitutionNodeLiteral extends SubstitutionNode {
 
     public SubstitutionNodeLiteral(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {

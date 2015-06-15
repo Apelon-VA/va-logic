@@ -12,7 +12,9 @@ import java.util.Arrays;
 
 /**
  * Created by kec on 12/6/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public abstract class ConnectorNode extends AbstractNode {
 
     private final ShortArrayList childIndices;

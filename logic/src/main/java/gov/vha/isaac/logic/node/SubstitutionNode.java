@@ -11,7 +11,9 @@ import java.io.IOException;
 
 /**
  * Created by kec on 12/10/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public abstract class SubstitutionNode extends AbstractNode {
 
     SubstitutionFieldSpecification substitutionFieldSpecification;

@@ -21,6 +21,7 @@ import gov.vha.isaac.logic.node.AbstractNode;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
 import gov.vha.isaac.ochre.api.logic.assertions.AllRole;
@@ -60,6 +61,7 @@ import org.apache.mahout.math.map.OpenShortObjectHashMap;
 /**
  *
  * @author kec
+ * @deprecated moved to ochre model project
  */
 public class LogicalExpressionBuilderImpl implements LogicalExpressionBuilder {
     
@@ -113,10 +115,10 @@ public class LogicalExpressionBuilderImpl implements LogicalExpressionBuilder {
     }
 
     @Override
-    public DisjointWith disjointWith(ConceptProxy conceptProxy) {
+    public DisjointWith disjointWith(ConceptChronology conceptChronology) {
         checkNotBuilt();
         GenericAxiom axiom = new GenericAxiom(NodeSemantic.DISJOINT_WITH, this);
-        axiomParameters.put(axiom.getIndex(), conceptProxy);
+        axiomParameters.put(axiom.getIndex(), conceptChronology);
         return axiom;
     }
 
@@ -129,45 +131,45 @@ public class LogicalExpressionBuilderImpl implements LogicalExpressionBuilder {
     }
 
     @Override
-    public ConceptAssertion conceptAssertion(ConceptProxy conceptProxy) {
+    public ConceptAssertion conceptAssertion(ConceptChronology conceptChronology) {
         checkNotBuilt();
         GenericAxiom axiom = new GenericAxiom(NodeSemantic.CONCEPT, this);
-        axiomParameters.put(axiom.getIndex(), conceptProxy);
+        axiomParameters.put(axiom.getIndex(), conceptChronology);
         return axiom;
     }
 
     @Override
-    public AllRole allRole(ConceptProxy roleTypeProxy, ConceptAssertion roleRestriction) {
+    public AllRole allRole(ConceptChronology roleTypeChronology, Assertion roleRestriction) {
         checkNotBuilt();
         GenericAxiom axiom = new GenericAxiom(NodeSemantic.ROLE_ALL, this);
         addToDefinitionTree(axiom, roleRestriction);
-        axiomParameters.put(axiom.getIndex(), roleTypeProxy);
+        axiomParameters.put(axiom.getIndex(), roleTypeChronology);
         return axiom;
     }
 
     @Override
-    public Feature feature(ConceptProxy featureTypeProxy, LiteralAssertion literal) {
+    public Feature feature(ConceptChronology featureTypeChronology, LiteralAssertion literal) {
         checkNotBuilt();
         GenericAxiom axiom = new GenericAxiom(NodeSemantic.FEATURE, this);
         addToDefinitionTree(axiom, literal);
-        axiomParameters.put(axiom.getIndex(), featureTypeProxy);
+        axiomParameters.put(axiom.getIndex(), featureTypeChronology);
         return axiom;
     }
 
     @Override
-    public SomeRole someRole(ConceptProxy roleTypeProxy, ConceptAssertion roleRestriction) {
+    public SomeRole someRole(ConceptChronology roleTypeChronology, Assertion roleRestriction) {
         checkNotBuilt();
         GenericAxiom axiom = new GenericAxiom(NodeSemantic.ROLE_SOME, this);
         addToDefinitionTree(axiom, roleRestriction);
-        axiomParameters.put(axiom.getIndex(), roleTypeProxy);
+        axiomParameters.put(axiom.getIndex(), roleTypeChronology);
         return axiom;
     }
 
     @Override
-    public Template template(ConceptProxy templateConcept, ConceptProxy assemblageToPopulateTemplateConcept) {
+    public Template template(ConceptChronology templateChronology, ConceptChronology assemblageToPopulateTemplateConcept) {
         checkNotBuilt();
         GenericAxiom axiom = new GenericAxiom(NodeSemantic.TEMPLATE, this);
-        axiomParameters.put(axiom.getIndex(), new Object[]{templateConcept, assemblageToPopulateTemplateConcept});
+        axiomParameters.put(axiom.getIndex(), new Object[]{templateChronology, assemblageToPopulateTemplateConcept});
         return axiom;
     }
 

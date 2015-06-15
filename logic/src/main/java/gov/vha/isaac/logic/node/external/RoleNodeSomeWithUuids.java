@@ -15,12 +15,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  *
  * @author kec
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class RoleNodeSomeWithUuids extends TypedNodeWithUuids {
 
     public RoleNodeSomeWithUuids(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {

@@ -3,7 +3,6 @@ package gov.vha.isaac.logic.node.internal;
 import gov.vha.isaac.logic.LogicGraph;
 import gov.vha.isaac.logic.NodeSemantic;
 import gov.vha.isaac.logic.node.AbstractNode;
-import gov.vha.isaac.logic.node.external.FeatureNodeWithUuids;
 import gov.vha.isaac.logic.node.external.RoleNodeSomeWithUuids;
 import gov.vha.isaac.ochre.api.DataTarget;
 
@@ -12,11 +11,13 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  * Created by kec on 12/10/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public final class RoleNodeSomeWithNids extends TypedNodeWithNids {
 
     public RoleNodeSomeWithNids(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {
@@ -46,18 +47,6 @@ public final class RoleNodeSomeWithNids extends TypedNodeWithNids {
         return NodeSemantic.ROLE_SOME;
     }
     
-    @Override
-    protected UUID initNodeUuid() {
-        if (getIsaacDb().isPresent()) {
-            try {
-                return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
-                        getIsaacDb().get().getUuidPrimordialForNid(typeConceptNid).toString());
-            } catch (IOException| NoSuchAlgorithmException ex) {
-                throw new RuntimeException(ex);
-            } 
-        }
-        return null;
-     }
 
     @Override
     public String toString() {

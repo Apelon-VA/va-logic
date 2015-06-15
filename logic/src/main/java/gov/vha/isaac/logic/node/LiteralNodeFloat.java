@@ -10,11 +10,13 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  * Created by kec on 12/9/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class LiteralNodeFloat extends LiteralNode {
 
     float literalValue;
@@ -56,15 +58,12 @@ public class LiteralNodeFloat extends LiteralNode {
     }
     @Override
     protected UUID initNodeUuid() {
-        if (getIsaacDb().isPresent()) {
             try {
                 return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
                         Float.toString(literalValue));
             } catch (IOException| NoSuchAlgorithmException ex) {
                 throw new RuntimeException(ex);
             } 
-        }
-        return null;
      }
 
     @Override

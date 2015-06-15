@@ -1,4 +1,4 @@
-package gov.vha.isaac.logic.classify;
+package gov.vha.isaac.csiro.classify;
 
 import au.csiro.ontology.Ontology;
 import au.csiro.ontology.classification.IReasoner;

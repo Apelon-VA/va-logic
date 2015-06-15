@@ -11,7 +11,9 @@ import java.util.UUID;
 
 /**
  * Created by kec on 12/10/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class NecessarySetNode extends ConnectorNode {
 
     public NecessarySetNode(LogicGraph logicGraphVersion, AbstractNode... children) {

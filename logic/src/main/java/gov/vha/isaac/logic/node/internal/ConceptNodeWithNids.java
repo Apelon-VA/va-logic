@@ -12,13 +12,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  * Created by kec on 12/10/14.
+ *
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public final class ConceptNodeWithNids extends AbstractNode {
 
     int conceptNid;
@@ -33,13 +34,13 @@ public final class ConceptNodeWithNids extends AbstractNode {
         this.conceptNid = conceptNid;
 
     }
-   public ConceptNodeWithNids(ConceptNodeWithUuids externalForm) {
-       super(externalForm);
-        this.conceptNid = getIsaacDb().get().getNidForUuids(externalForm.getConceptUuid());
+
+    public ConceptNodeWithNids(ConceptNodeWithUuids externalForm) {
+        super(externalForm);
+        this.conceptNid = getIdentifierService().get().getNidForUuids(externalForm.getConceptUuid());
 
     }
 
-    
     public int getConceptNid() {
         return conceptNid;
     }
@@ -55,7 +56,8 @@ public final class ConceptNodeWithNids extends AbstractNode {
                 super.writeData(dataOutput, dataTarget);
                 dataOutput.writeInt(conceptNid);
                 break;
-            default: throw new UnsupportedOperationException("Can't handle dataTarget: " + dataTarget);
+            default:
+                throw new UnsupportedOperationException("Can't handle dataTarget: " + dataTarget);
         }
     }
 
@@ -66,18 +68,16 @@ public final class ConceptNodeWithNids extends AbstractNode {
 
     @Override
     protected UUID initNodeUuid() {
-        if (getIsaacDb().isPresent()) {
+        if (getIdentifierService().isPresent()) {
             try {
-                return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(), 
-                        getIsaacDb().get().getUuidPrimordialForNid(conceptNid).toString());
-            } catch (IOException| NoSuchAlgorithmException ex) {
+                return UuidT5Generator.get(getNodeSemantic().getSemanticUuid(),
+                        getIdentifierService().get().getUuidPrimordialForNid(conceptNid).toString());
+            } catch (IOException | NoSuchAlgorithmException ex) {
                 throw new RuntimeException(ex);
-            } 
-     }
+            }
+        }
         return null;
-     }
-    
-    
+    }
 
     @Override
     public AbstractNode[] getChildren() {
@@ -96,9 +96,15 @@ public final class ConceptNodeWithNids extends AbstractNode {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
 
         ConceptNodeWithNids that = (ConceptNodeWithNids) o;
 
@@ -111,11 +117,10 @@ public final class ConceptNodeWithNids extends AbstractNode {
         result = 31 * result + conceptNid;
         return result;
     }
-    
 
     @Override
     protected int compareFields(Node o) {
         return conceptNid - ((ConceptNodeWithNids) o).getConceptNid();
     }
-    
+
 }

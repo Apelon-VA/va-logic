@@ -8,6 +8,7 @@ import java.io.*;
 import java.util.UUID;
 /**
  * Created by kec on 12/10/14.
+ * @deprecated moved to ochre model project
  */
 public class AndNode extends ConnectorNode {
 

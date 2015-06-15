@@ -10,7 +10,9 @@ import java.io.IOException;
 
 /**
  * Created by kec on 12/12/14.
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public abstract class LiteralNode extends AbstractNode {
 
     public LiteralNode(LogicGraph logicGraphVersion, DataInputStream dataInputStream) throws IOException {

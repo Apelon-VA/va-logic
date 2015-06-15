@@ -16,14 +16,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.uuid.UuidT5Generator;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 
 /**
  *
  * @author kec
+ * @deprecated moved to ochre model project
  */
+@Deprecated
 public class ConceptNodeWithUuids extends AbstractNode {
 
     UUID conceptUuid;
@@ -41,11 +41,7 @@ public class ConceptNodeWithUuids extends AbstractNode {
 
     public ConceptNodeWithUuids(ConceptNodeWithNids internalForm) {
         super(internalForm);
-        try {
-            this.conceptUuid = getIsaacDb().get().getUuidPrimordialForNid(internalForm.getConceptNid());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.conceptUuid = getIdentifierService().get().getUuidPrimordialForNid(internalForm.getConceptNid()).get();
 
     }
 
