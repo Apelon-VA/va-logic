@@ -78,6 +78,7 @@ import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
+import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.Position;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
@@ -242,14 +243,13 @@ public class LogicProvider implements LogicService {
                 SememeChronologyImpl<LogicGraphSememeImpl> logicGraphChronicle = null;
                 LogicGraph lastLogicGraph = null;
                 for (Position position : conceptChronicle.getPositions()) {
-                    ViewCoordinate vcForPosition = new ViewCoordinate(UUID.randomUUID(),
-                            "vc for position", viewForLogicGraph);
+                    ViewCoordinate vcForPosition = new ViewCoordinate(UUID.randomUUID(), "vc for position", viewForLogicGraph);
                     vcForPosition.setViewPosition(position);
-                    ConceptVersion conceptVersion = conceptChronicle.getVersion(vcForPosition);
-                    if (conceptVersion.isActive()) {
+                    Optional<ConceptVersionBI> conceptVersion = conceptChronicle.getVersion(vcForPosition);
+                    if (conceptVersion.isPresent() && conceptVersion.get().isActive()) {
                         try {
 
-                            LogicGraph logicGraph = new LogicGraph(conceptVersion,
+                            LogicGraph logicGraph = new LogicGraph(conceptVersion.get(),
                                     roleConceptSequences,
                                     featureConceptSequences,
                                     neverRoleGroupConceptSequences,
@@ -257,7 +257,7 @@ public class LogicProvider implements LogicService {
                             if (!logicGraph.isMeaningful()) {
                                 vcForPosition.setRelationshipAssertionType(RelAssertionType.INFERRED);
                                 conceptVersion = conceptChronicle.getVersion(vcForPosition);
-                                logicGraph = new LogicGraph(conceptVersion,
+                                logicGraph = new LogicGraph(conceptVersion.get(),
                                         roleConceptSequences,
                                         featureConceptSequences,
                                         neverRoleGroupConceptSequences,

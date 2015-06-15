@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac.logic</groupId>
         <artifactId>logic-parent</artifactId>
-        <version>1.12-SNAPSHOT</version>
+        <version>1.14-SNAPSHOT</version>
     </parent>
     
     <groupId>gov.vha.isaac.logic.modules</groupId>
