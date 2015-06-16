@@ -9,7 +9,7 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import java.io.*;
 import java.util.Optional;
 import java.util.SortedSet;
@@ -35,7 +35,7 @@ public abstract class AbstractNode implements Node, Comparable<Node> {
  
     protected Optional<ConceptService> getConceptService() {
         if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
+            conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
         }
         return Optional.ofNullable(conceptService);
     }

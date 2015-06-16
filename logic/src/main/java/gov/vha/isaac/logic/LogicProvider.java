@@ -39,6 +39,7 @@ import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
@@ -109,7 +110,7 @@ public class LogicProvider implements LogicService {
 
     public static ConceptService getConceptService() {
         if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
+            conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
         }
         return conceptService;
     }

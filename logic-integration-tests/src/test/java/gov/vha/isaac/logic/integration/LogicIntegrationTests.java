@@ -30,6 +30,7 @@ import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
@@ -78,7 +79,7 @@ public class LogicIntegrationTests {
     
     public static ConceptService getConceptService() {
         if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
+            conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
         }
         return conceptService;
     }
@@ -266,7 +267,7 @@ public class LogicIntegrationTests {
         double msPerConcept = 1.0d * duration.toMillis() / conceptCount;
         log.info("  msPerConcept: {}", msPerConcept);
 
-        log.info("  concepts in map: {}", LookupService.getService(ConceptService.class).getConceptCount());
+        log.info("  concepts in map: {}", LookupService.getService(ConceptServiceManagerI.class).get().getConceptCount());
 
         log.info("  sequences map: {}", getIdentifierService().getConceptSequenceStream().distinct().count());
     }
