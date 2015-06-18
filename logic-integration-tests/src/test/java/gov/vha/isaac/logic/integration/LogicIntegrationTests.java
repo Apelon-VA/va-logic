@@ -168,14 +168,13 @@ public class LogicIntegrationTests {
 
         if (!dbExists) {
             if (LookupService.getService(ConfigurationService.class).getConceptModel() == ConceptModel.OTF_CONCEPT_MODEL) {
-                logic.initialize(LogicCoordinates.getStandardElProfile());
+                
+                logic.startInitialize(LogicCoordinates.getStandardElProfile()).get();
             }
         }
 
-        Task<ClassifierResults> classifyTask = logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
+        Task<ClassifierResults> classifyTask = logic.startFullClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
-        
-        LookupService.getService(WorkExecutors.class).getExecutor().execute(classifyTask);
         
         ClassifierResults results = classifyTask.get();
         
