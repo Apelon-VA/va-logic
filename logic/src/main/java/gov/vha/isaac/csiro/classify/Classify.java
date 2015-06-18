@@ -4,7 +4,7 @@ import au.csiro.ontology.Ontology;
 import au.csiro.ontology.classification.IReasoner;
 import au.csiro.ontology.model.Axiom;
 import au.csiro.snorocket.core.SnorocketReasoner;
-import gov.vha.isaac.logic.LogicGraph;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import org.apache.mahout.math.set.OpenIntHashSet;
 
 import java.util.BitSet;
@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 public class Classify {
     public static void execute(BitSet conceptSequences, OpenIntHashSet roleSequences,
                                OpenIntHashSet neverGroupRoleSequences, int roleGroupConceptSequence) {
-        Stream<LogicGraph> logicGraphStream = null;
+        Stream<LogicalExpressionOchreImpl> logicGraphStream = null;
 
 
         AxiomCollector axiomCollector = new AxiomCollector(conceptSequences, roleSequences,

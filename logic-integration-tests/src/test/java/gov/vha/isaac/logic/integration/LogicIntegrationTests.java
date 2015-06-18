@@ -6,15 +6,12 @@
 package gov.vha.isaac.logic.integration;
 
 import gov.vha.isaac.cradle.identifier.IdentifierProvider;
-import gov.vha.isaac.logic.LogicGraph;
-import gov.vha.isaac.logic.LogicService;
+import gov.vha.isaac.ochre.api.logic.LogicService;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.ConceptModel;
-import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.LookupService;
@@ -25,11 +22,13 @@ import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
+import gov.vha.isaac.ochre.api.classifier.ClassifierService;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
@@ -46,10 +45,14 @@ import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.util.UuidT3Generator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -162,19 +165,25 @@ public class LogicIntegrationTests {
             loadDatabase();
         }
         
-        LogicService logic = LookupService.getService(LogicService.class);
-
-        if (!dbExists) {
-            if (LookupService.getService(ConfigurationService.class).getConceptModel() == ConceptModel.OTF_CONCEPT_MODEL) {
-                logic.initialize(LogicCoordinates.getStandardElProfile());
-            }
-        }
-
-        ClassifierResults results = logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
-                LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
+        LogicService logicService = LookupService.getService(LogicService.class);
+        LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
+        StampCoordinate stampCoordinate = StampCoordinates.getDevelopmentLatest();
+        ClassifierService classifier = logicService.getClassifierService(stampCoordinate, logicCoordinate, EditCoordinates.getDefaultUserSolorOverlay());
+        ClassifierResults results = classifier.classify();
         log.info(results);
         logResultDetails(results, StampCoordinates.getDevelopmentLatest());
         
+			UUID bleedingSnomedUuid = UuidT3Generator.fromSNOMED(131148009L);
+
+			ConceptChronology<? extends ConceptVersion> bleedingConcept1 = getConceptService().getConcept(bleedingSnomedUuid);
+			System.out.println("\nFound [1] nid: " + bleedingConcept1.getNid());
+			System.out.println("Found [1] concept sequence: " + getIdentifierService().getConceptSequence(bleedingConcept1.getNid()));
+			System.out.println("Found [1]: " + bleedingConcept1.toUserString() + "\n " + bleedingConcept1.toString());
+
+			Optional<LatestVersion<LogicalExpressionOchreImpl>> lg1 = classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getStatedAssemblageSequence(), stampCoordinate);
+			System.out.println("Stated logic graph:  " + lg1);
+			Optional<LatestVersion<LogicalExpressionOchreImpl>> lg2 = classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getInferredAssemblageSequence(), stampCoordinate);
+			System.out.println("Inferred logic graph:  " + lg2);
         
         
         // Add new concept and definition here to classify. 
@@ -207,10 +216,8 @@ public class LogicIntegrationTests {
         }
         
         getCommitService().commit("Commit for logic integration incremental classification test. ").get();
-        ConceptSequenceSet newConcepts = new ConceptSequenceSet();
-        newConcepts.add(concept.getConceptSequence());
-        results = logic.incrementalClassification(StampCoordinates.getDevelopmentLatest(), 
-                LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay(), newConcepts);
+        
+        results = classifier.classify();
         log.info(results);
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
@@ -289,12 +296,11 @@ public class LogicIntegrationTests {
                 sememeSnapshot.getLatestActiveSememeVersionsForComponentFromAssemblage(conceptNid, 
                         LogicCoordinates.getStandardElProfile().getStatedAssemblageSequence())
                         .forEach((LatestVersion<LogicGraphSememe> logicGraphSememe) -> {
-                            LogicGraph graph = new LogicGraph(logicGraphSememe.value().getGraphData(), 
+                            LogicalExpressionOchreImpl graph = new LogicalExpressionOchreImpl(logicGraphSememe.value().getGraphData(), 
                                     DataSource.INTERNAL);
                             builder.append(graph.toString());
                         
                         });
-                
             });
         });
         

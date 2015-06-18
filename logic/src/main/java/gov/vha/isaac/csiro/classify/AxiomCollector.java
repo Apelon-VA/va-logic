@@ -4,7 +4,7 @@ import au.csiro.ontology.Factory;
 import au.csiro.ontology.model.Axiom;
 import au.csiro.ontology.model.Concept;
 import au.csiro.ontology.model.Role;
-import gov.vha.isaac.logic.LogicGraph;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.apache.mahout.math.set.OpenIntHashSet;
 
@@ -21,7 +21,7 @@ import java.util.stream.Collector;
 
 // TODO move to CSIRO specific module
 
-public class AxiomCollector implements Collector<LogicGraph, Set<Axiom>, Set<Axiom>> {
+public class AxiomCollector implements Collector<LogicalExpressionOchreImpl, Set<Axiom>, Set<Axiom>> {
 
     BitSet conceptSequences;
     Concept[] concepts;
@@ -50,7 +50,7 @@ public class AxiomCollector implements Collector<LogicGraph, Set<Axiom>, Set<Axi
     }
 
     @Override
-    public BiConsumer<Set<Axiom>, LogicGraph> accumulator() {
+    public BiConsumer<Set<Axiom>, LogicalExpressionOchreImpl> accumulator() {
         return new AxiomAccumulator(concepts, conceptSequences, roles, neverGroupRoleSequences, roleGroupConceptSequence);
     }
 
