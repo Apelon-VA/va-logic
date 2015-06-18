@@ -48,6 +48,7 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -171,8 +172,13 @@ public class LogicIntegrationTests {
             }
         }
 
-        ClassifierResults results = logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
+        Task<ClassifierResults> classifyTask = logic.fullClassification(StampCoordinates.getDevelopmentLatest(), 
                 LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
+        
+        LookupService.getService(WorkExecutors.class).getExecutor().execute(classifyTask);
+        
+        ClassifierResults results = classifyTask.get();
+        
         log.info(results);
         logResultDetails(results, StampCoordinates.getDevelopmentLatest());
         

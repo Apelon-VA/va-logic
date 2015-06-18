@@ -61,7 +61,6 @@ import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
 import gov.vha.isaac.ochre.model.logic.LogicExpressionOchreImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -75,15 +74,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import javafx.concurrent.Task;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
+import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.Position;
@@ -427,139 +424,95 @@ public class LogicProvider implements LogicService {
         }
     }
 
-    /*
     @Override
-    public ClassifierResults fullClassification(StampCoordinate stampCoordinate,
-            LogicCoordinate logicCoordinate, EditCoordinate editCoordinate) {
-        assert logicCoordinate.getClassifierSequence()
-                == editCoordinate.getAuthorSequence() :
-                "classifier sequence: " + logicCoordinate.getClassifierSequence()
-                + " author sequence: " + editCoordinate.getAuthorSequence();
-        log.info("  Start classify.");
-        AtomicInteger logicGraphMembers = new AtomicInteger();
-        Instant classifyStart = Instant.now();
-        log.info("     Start axiom construction.");
-        Instant axiomConstructionStart = Instant.now();
-        ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
-        log.info("     classifier data before: \n" + cd);
-        processAllStatedAxioms(stampCoordinate, logicCoordinate,
-                cd, logicGraphMembers);
-        Instant axiomConstructionEnd = Instant.now();
-        log.info("     classifier data after: \n" + cd);
-        Duration axiomConstructionDuration = Duration.between(axiomConstructionStart, axiomConstructionEnd);
-        log.info("     Finished axiom construction. LogicGraphMembers: " + logicGraphMembers);
-        log.info("     Axiom construction duration: " + axiomConstructionDuration);
-        log.info("     Start axiom load.");
-        Instant axiomLoadStart = Instant.now();
-        LookupService.getService(MemoryManagementService.class).setMemoryConfiguration(MemoryConfigurations.CLASSIFY);
-        cd.loadAxioms();
-        Instant axiomLoadEnd = Instant.now();
-        Duration axiomLoadDuration = Duration.between(axiomLoadStart, axiomLoadEnd);
-        log.info("     Finished axiom load. ");
-        log.info("     Axiom load duration: " + axiomLoadDuration);
-        log.info("     Start reasoner classify. ");
-        Instant reasonerClassifyStart = Instant.now();
-        cd.classify();
-        Instant reasonerClassifyEnd = Instant.now();
-        Duration reasonerClassifyDuration = Duration.between(reasonerClassifyStart, reasonerClassifyEnd);
-        log.info("     Finished reasoner classify. ");
-        log.info("     Reasoner classify duration: " + reasonerClassifyDuration);
-        Instant retrieveResultsStart = Instant.now();
-        Ontology res = cd.getClassifiedOntology();
-        Instant retrieveResultsEnd = Instant.now();
-        Duration retrieveResultsDuration = Duration.between(retrieveResultsStart, retrieveResultsEnd);
-        log.info("     Finished retrieve results. ");
-        log.info("     Retrieve results duration: " + retrieveResultsDuration);
-        ClassifierResults classifierResults = collectResults(res, res.getNodeMap().values());
-        Instant classifyEnd = Instant.now();
-        Duration classifyDuration = Duration.between(classifyStart, classifyEnd);
-        log.info("  Finished classify. LogicGraphMembers: " + logicGraphMembers);
-        log.info("  Classify duration: " + classifyDuration);
-
-        return classifierResults;
-    }
-	*/
-    
-    @Override
-    public Task<ClassifierResults> getFullClassificationTask(StampCoordinate pStampCoordinate,
-            LogicCoordinate pLogicCoordinate, EditCoordinate pEditCoordinate) {
-    	
-    	final StampCoordinate stampCoordinate = pStampCoordinate;
-    	final LogicCoordinate logicCoordinate = pLogicCoordinate;
-    	final EditCoordinate  editCoordinate  = pEditCoordinate;
-    	
-    	Task<ClassifierResults> classificationTask = new Task<ClassifierResults>() {
+    public Task<ClassifierResults> fullClassification(final StampCoordinate stampCoordinate,
+            final LogicCoordinate logicCoordinate, final EditCoordinate editCoordinate) {
+        
+        Task<ClassifierResults> classificationTask = new Task<ClassifierResults>() {
+            {
+                updateTitle("Performing Full Classify");
+                updateProgress(-1, Long.MAX_VALUE);
+            }
 
             @Override protected ClassifierResults call() throws Exception {
-
-                assert logicCoordinate.getClassifierSequence() == editCoordinate.getAuthorSequence() :
-	                "classifier sequence: " + logicCoordinate.getClassifierSequence()
-	                + " author sequence: " + editCoordinate.getAuthorSequence();
-
-	            
-                updateMessage("Beginning classification...");
-
-                log.info("  Start classify.");
-		        AtomicInteger logicGraphMembers = new AtomicInteger();
-		        Instant classifyStart = Instant.now();
-
-		        if (isCancelled()) return null;
-		        updateMessage("Performing axion construction...");
-
-                log.info("     Start axiom construction.");
-		        Instant axiomConstructionStart = Instant.now();
-		        ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
-		        log.info("     classifier data before: \n" + cd);
-		        processAllStatedAxioms(stampCoordinate, logicCoordinate,
-		                cd, logicGraphMembers);
-		        Instant axiomConstructionEnd = Instant.now();
-		        log.info("     classifier data after: \n" + cd);
-		        Duration axiomConstructionDuration = Duration.between(axiomConstructionStart, axiomConstructionEnd);
-		        log.info("     Finished axiom construction. LogicGraphMembers: " + logicGraphMembers);
-		        log.info("     Axiom construction duration: " + axiomConstructionDuration);
-		        log.info("     Start axiom load.");
-
-		        if (isCancelled()) return null;
-                updateMessage("Performing axion load...");
-
-		        Instant axiomLoadStart = Instant.now();
-		        LookupService.getService(MemoryManagementService.class).setMemoryConfiguration(MemoryConfigurations.CLASSIFY);
-		        cd.loadAxioms();
-		        Instant axiomLoadEnd = Instant.now();
-		        Duration axiomLoadDuration = Duration.between(axiomLoadStart, axiomLoadEnd);
-		        log.info("     Finished axiom load. ");
-		        log.info("     Axiom load duration: " + axiomLoadDuration);
-		        log.info("     Start reasoner classify. ");
-
-		        if (isCancelled()) return null;
-                updateMessage("Performing reasoner classify...");
-
-		        Instant reasonerClassifyStart = Instant.now();
-		        cd.classify();
-		        Instant reasonerClassifyEnd = Instant.now();
-		        Duration reasonerClassifyDuration = Duration.between(reasonerClassifyStart, reasonerClassifyEnd);
-		        log.info("     Finished reasoner classify. ");
-		        log.info("     Reasoner classify duration: " + reasonerClassifyDuration);
-
-
-		        if (isCancelled()) return null;
-                updateMessage("Retrieving results...");
-
-                Instant retrieveResultsStart = Instant.now();
-		        Ontology res = cd.getClassifiedOntology();
-		        Instant retrieveResultsEnd = Instant.now();
-		        Duration retrieveResultsDuration = Duration.between(retrieveResultsStart, retrieveResultsEnd);
-		        log.info("     Finished retrieve results. ");
-		        log.info("     Retrieve results duration: " + retrieveResultsDuration);
-		        ClassifierResults classifierResults = collectResults(res, res.getNodeMap().values());
-		        Instant classifyEnd = Instant.now();
-		        Duration classifyDuration = Duration.between(classifyStart, classifyEnd);
-		        log.info("  Finished classify. LogicGraphMembers: " + logicGraphMembers);
-		        log.info("  Classify duration: " + classifyDuration);
-
-                updateMessage("Classification complete.");
-		        
-		        return classifierResults;
+                try {
+                    LookupService.get().getService(ActiveTaskSet.class).get().add(this);
+                    assert logicCoordinate.getClassifierSequence() == editCoordinate.getAuthorSequence() :
+                        "classifier sequence: " + logicCoordinate.getClassifierSequence()
+                        + " author sequence: " + editCoordinate.getAuthorSequence();
+                    int totalWork = 5;
+                    
+                    updateProgress(1,totalWork);
+                    updateMessage("Beginning classification...");
+    
+                    log.info("  Start classify.");
+                    AtomicInteger logicGraphMembers = new AtomicInteger();
+                    Instant classifyStart = Instant.now();
+    
+                    if (isCancelled()) return null;
+                    updateMessage("Performing axiom construction...");
+    
+                    log.info("     Start axiom construction.");
+                    Instant axiomConstructionStart = Instant.now();
+                    ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
+                    log.info("     classifier data before: \n" + cd);
+                    processAllStatedAxioms(stampCoordinate, logicCoordinate,
+                            cd, logicGraphMembers);
+                    Instant axiomConstructionEnd = Instant.now();
+                    log.info("     classifier data after: \n" + cd);
+                    Duration axiomConstructionDuration = Duration.between(axiomConstructionStart, axiomConstructionEnd);
+                    log.info("     Finished axiom construction. LogicGraphMembers: " + logicGraphMembers);
+                    log.info("     Axiom construction duration: " + axiomConstructionDuration);
+                    log.info("     Start axiom load.");
+    
+                    if (isCancelled()) return null;
+                    updateMessage("Performing axiom load...");
+                    updateProgress(2, totalWork);
+    
+                    Instant axiomLoadStart = Instant.now();
+                    LookupService.getService(MemoryManagementService.class).setMemoryConfiguration(MemoryConfigurations.CLASSIFY);
+                    cd.loadAxioms();
+                    Instant axiomLoadEnd = Instant.now();
+                    Duration axiomLoadDuration = Duration.between(axiomLoadStart, axiomLoadEnd);
+                    log.info("     Finished axiom load. ");
+                    log.info("     Axiom load duration: " + axiomLoadDuration);
+                    log.info("     Start reasoner classify. ");
+    
+                    if (isCancelled()) return null;
+                    updateMessage("Performing reasoner classify...");
+                    updateProgress(3, totalWork);
+    
+                    Instant reasonerClassifyStart = Instant.now();
+                    cd.classify();
+                    Instant reasonerClassifyEnd = Instant.now();
+                    Duration reasonerClassifyDuration = Duration.between(reasonerClassifyStart, reasonerClassifyEnd);
+                    log.info("     Finished reasoner classify. ");
+                    log.info("     Reasoner classify duration: " + reasonerClassifyDuration);
+    
+                    if (isCancelled()) return null;
+                    updateMessage("Retrieving results...");
+                    updateProgress(4, totalWork);
+    
+                    Instant retrieveResultsStart = Instant.now();
+                    Ontology res = cd.getClassifiedOntology();
+                    Instant retrieveResultsEnd = Instant.now();
+                    Duration retrieveResultsDuration = Duration.between(retrieveResultsStart, retrieveResultsEnd);
+                    log.info("     Finished retrieve results. ");
+                    log.info("     Retrieve results duration: " + retrieveResultsDuration);
+                    ClassifierResults classifierResults = collectResults(res, res.getNodeMap().values());
+                    Instant classifyEnd = Instant.now();
+                    Duration classifyDuration = Duration.between(classifyStart, classifyEnd);
+                    log.info("  Finished classify. LogicGraphMembers: " + logicGraphMembers);
+                    log.info("  Classify duration: " + classifyDuration);
+    
+                    updateMessage("Classification complete.");
+                    updateProgress(1, totalWork);
+                    
+                    return classifierResults;
+                }
+                finally {
+                    LookupService.get().getService(ActiveTaskSet.class).get().remove(this);
+                }
             }
 
             @Override protected void succeeded() {
@@ -576,10 +529,8 @@ public class LogicProvider implements LogicService {
                 super.failed();
                 updateMessage("Classification failed. Check log for details.");
             }
-    	
-    	};
-
-    	return classificationTask;
+        };
+        return classificationTask;
     }
     
     
