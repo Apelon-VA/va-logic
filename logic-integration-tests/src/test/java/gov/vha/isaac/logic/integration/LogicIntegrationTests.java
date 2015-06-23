@@ -12,6 +12,8 @@ import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.ConceptModel;
+import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.LookupService;
@@ -46,7 +48,6 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
-import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import gov.vha.isaac.ochre.util.UuidT3Generator;
 import java.util.ArrayList;
@@ -136,6 +137,7 @@ public class LogicIntegrationTests {
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
         dbExists = dbFolderPath.toFile().exists();
         System.out.println("termstore folder path: " + dbFolderPath.toFile().exists());
+        LookupService.getService(ConfigurationService.class).setConceptModel(ConceptModel.OCHRE_CONCEPT_MODEL);
 
         LookupService.startupIsaac();
         ActiveTasksTicker.start(10);
@@ -167,9 +169,10 @@ public class LogicIntegrationTests {
         
         LogicService logicService = LookupService.getService(LogicService.class);
         LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
-        StampCoordinate stampCoordinate = StampCoordinates.getDevelopmentLatest();
+        StampCoordinate stampCoordinate = StampCoordinates.getDevelopmentLatestActiveOnly();
         ClassifierService classifier = logicService.getClassifierService(stampCoordinate, logicCoordinate, EditCoordinates.getDefaultUserSolorOverlay());
-        ClassifierResults results = classifier.classify();
+        Task<ClassifierResults> classifyTask = classifier.classify();
+        ClassifierResults results = classifyTask.get();
         log.info(results);
         logResultDetails(results, StampCoordinates.getDevelopmentLatest());
         
@@ -180,9 +183,11 @@ public class LogicIntegrationTests {
 			System.out.println("Found [1] concept sequence: " + getIdentifierService().getConceptSequence(bleedingConcept1.getNid()));
 			System.out.println("Found [1]: " + bleedingConcept1.toUserString() + "\n " + bleedingConcept1.toString());
 
-			Optional<LatestVersion<LogicalExpressionOchreImpl>> lg1 = classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getStatedAssemblageSequence(), stampCoordinate);
+			Optional<LatestVersion<? extends LogicalExpression>> lg1 = 
+                                classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getStatedAssemblageSequence(), stampCoordinate);
 			System.out.println("Stated logic graph:  " + lg1);
-			Optional<LatestVersion<LogicalExpressionOchreImpl>> lg2 = classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getInferredAssemblageSequence(), stampCoordinate);
+			Optional<LatestVersion<? extends LogicalExpression>> lg2 = 
+                                classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getInferredAssemblageSequence(), stampCoordinate);
 			System.out.println("Inferred logic graph:  " + lg2);
         
         
@@ -217,7 +222,8 @@ public class LogicIntegrationTests {
         
         getCommitService().commit("Commit for logic integration incremental classification test. ").get();
         
-        results = classifier.classify();
+        classifyTask = classifier.classify();
+        results = classifyTask.get();
         log.info(results);
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
@@ -293,7 +299,7 @@ public class LogicIntegrationTests {
                 }
                 builder.append(":\n ");
                 
-                sememeSnapshot.getLatestActiveSememeVersionsForComponentFromAssemblage(conceptNid, 
+                sememeSnapshot.getLatestSememeVersionsForComponentFromAssemblage(conceptNid, 
                         LogicCoordinates.getStandardElProfile().getStatedAssemblageSequence())
                         .forEach((LatestVersion<LogicGraphSememe> logicGraphSememe) -> {
                             LogicalExpressionOchreImpl graph = new LogicalExpressionOchreImpl(logicGraphSememe.value().getGraphData(), 

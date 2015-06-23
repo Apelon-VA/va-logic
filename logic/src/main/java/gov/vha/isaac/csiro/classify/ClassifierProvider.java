@@ -15,12 +15,10 @@
  */
 package gov.vha.isaac.csiro.classify;
 
-import au.csiro.ontology.Ontology;
 import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
@@ -28,56 +26,39 @@ import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
 import gov.vha.isaac.ochre.api.classifier.ClassifierService;
-import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
-import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
-import gov.vha.isaac.ochre.api.coordinate.StampPosition;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.Node;
-import gov.vha.isaac.ochre.api.memory.MemoryConfigurations;
-import gov.vha.isaac.ochre.api.memory.MemoryManagementService;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import gov.vha.isaac.ochre.collections.NidSet;
-import gov.vha.isaac.ochre.collections.SememeSequenceSet;
-import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.version.Stamp;
-import org.jvnet.hk2.annotations.Service;
 
 /**
  *
  * @author kec
  */
-@Service
 public class ClassifierProvider implements ClassifierService {
 
     private static boolean VERBOSE = false;
@@ -143,17 +124,22 @@ public class ClassifierProvider implements ClassifierService {
         getCommitService().addChangeListener(classifierChangeListener);
     }
 
-    @Override
-    public ClassifierResults classify() {
-        // TODO automatically switch between incremental and full classification
-        ClassifierResults results;
-        if (classifierChangeListener.incrementalAllowed()) {
-            results = incrementalClassification(stampCoordinate, logicCoordinate, editCoordinate, classifierChangeListener.getNewConcepts());
-        } else {
-            results = fullClassification(stampCoordinate, logicCoordinate, editCoordinate);
-        }
+    public ConceptSequenceSet getNewConcepts() {
+        return classifierChangeListener.getNewConcepts();
+    }
+
+    public boolean incrementalAllowed() {
+        return classifierChangeListener.incrementalAllowed();
+    }
+
+    public void classifyComplete() {
         classifierChangeListener.classifyComplete();
-        return results;
+    }
+
+    @Override
+    public Task<ClassifierResults> classify() {
+        ClassifyTask task = ClassifyTask.create(this);
+        return task;
     }
 
     public void printIfMoreNodes(int graphNodeCount, AtomicInteger maxGraphSize,
@@ -214,165 +200,11 @@ public class ClassifierProvider implements ClassifierService {
         }
     }
 
-    public ClassifierResults fullClassification(StampCoordinate stampCoordinate,
-            LogicCoordinate logicCoordinate, EditCoordinate editCoordinate) {
-        assert logicCoordinate.getClassifierSequence()
-                == editCoordinate.getAuthorSequence() :
-                "classifier sequence: " + logicCoordinate.getClassifierSequence()
-                + " author sequence: " + editCoordinate.getAuthorSequence();
-        log.info("  Start classify.");
-        AtomicInteger logicGraphMembers = new AtomicInteger();
-        Instant classifyStart = Instant.now();
-        log.info("     Start axiom construction.");
-        Instant axiomConstructionStart = Instant.now();
-        ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
-        log.info("     classifier data before: \n" + cd);
-        processAllStatedAxioms(stampCoordinate, logicCoordinate,
-                cd, logicGraphMembers);
-        Instant axiomConstructionEnd = Instant.now();
-        log.info("     classifier data after: \n" + cd);
-        Duration axiomConstructionDuration = Duration.between(axiomConstructionStart, axiomConstructionEnd);
-        log.info("     Finished axiom construction. LogicGraphMembers: " + logicGraphMembers);
-        log.info("     Axiom construction duration: " + axiomConstructionDuration);
-        log.info("     Start axiom load.");
-        Instant axiomLoadStart = Instant.now();
-        LookupService.getService(MemoryManagementService.class).setMemoryConfiguration(MemoryConfigurations.CLASSIFY);
-        cd.loadAxioms();
-        Instant axiomLoadEnd = Instant.now();
-        Duration axiomLoadDuration = Duration.between(axiomLoadStart, axiomLoadEnd);
-        log.info("     Finished axiom load. ");
-        log.info("     Axiom load duration: " + axiomLoadDuration);
-        log.info("     Start reasoner classify. ");
-        Instant reasonerClassifyStart = Instant.now();
-        cd.classify();
-        Instant reasonerClassifyEnd = Instant.now();
-        Duration reasonerClassifyDuration = Duration.between(reasonerClassifyStart, reasonerClassifyEnd);
-        log.info("     Finished reasoner classify. ");
-        log.info("     Reasoner classify duration: " + reasonerClassifyDuration);
-        Instant retrieveResultsStart = Instant.now();
-        Ontology res = cd.getClassifiedOntology();
-        Instant retrieveResultsEnd = Instant.now();
-        Duration retrieveResultsDuration = Duration.between(retrieveResultsStart, retrieveResultsEnd);
-        log.info("     Finished retrieve results. ");
-        log.info("     Retrieve results duration: " + retrieveResultsDuration);
-        ClassifierResults classifierResults = collectResults(res, res.getNodeMap().values());
-        Instant classifyEnd = Instant.now();
-        Duration classifyDuration = Duration.between(classifyStart, classifyEnd);
-        log.info("  Finished classify. LogicGraphMembers: " + logicGraphMembers);
-        log.info("  Classify duration: " + classifyDuration);
-
-        return classifierResults;
-    }
-
-    private ClassifierResults collectResults(Ontology res, Collection<au.csiro.ontology.Node> affectedNodes) {
-        ConceptSequenceSet affectedConcepts = new ConceptSequenceSet();
-        HashSet<ConceptSequenceSet> equivalentSets = new HashSet<>();
-        affectedNodes.forEach((node) -> {
-            Set<String> equivalentConcepts = node.getEquivalentConcepts();
-            if (node.getEquivalentConcepts().size() > 1) {
-                ConceptSequenceSet equivalentSet = new ConceptSequenceSet();
-                equivalentSets.add(equivalentSet);
-                equivalentConcepts.forEach((conceptSequence) -> {
-                    equivalentSet.add(Integer.parseInt(conceptSequence));
-                    affectedConcepts.add(Integer.parseInt(conceptSequence));
-                });
-            } else {
-                equivalentConcepts.forEach((conceptSequence) -> {
-                    try {
-                        affectedConcepts.add(Integer.parseInt(conceptSequence));
-
-                    } catch (NumberFormatException numberFormatException) {
-                        if (conceptSequence.equals("_BOTTOM_")
-                                || conceptSequence.equals("_TOP_")) {
-                            // do nothing. 
-                        } else {
-                            throw numberFormatException;
-                        }
-                    }
-                });
-            }
-        });
-        return new ClassifierResults(affectedConcepts, equivalentSets);
-    }
-
-    public ClassifierResults incrementalClassification(StampCoordinate stampCoordinate,
-            LogicCoordinate logicCoordinate, EditCoordinate editCoordinate,
-            ConceptSequenceSet newConcepts) {
-        assert logicCoordinate.getClassifierSequence()
-                == editCoordinate.getAuthorSequence() :
-                "classifier sequence: " + logicCoordinate.getClassifierSequence()
-                + " author sequence: " + editCoordinate.getAuthorSequence();
-        log.info("Start incremental test.");
-        log.info("  Start to make graph for classification.");
-        log.info("  Start classify.");
-        LookupService.getService(MemoryManagementService.class).setMemoryConfiguration(MemoryConfigurations.CLASSIFY);
-
-        Instant incrementalStart = Instant.now();
-        NidSet conceptNidSetToClassify = NidSet.of(newConcepts);
-        log.info("   Concepts to classify: " + conceptNidSetToClassify.size());
-
-        AtomicInteger logicGraphMembers = new AtomicInteger();
-        AtomicInteger rejectedLogicGraphMembers = new AtomicInteger();
-        ClassifierData cd = ClassifierData.get(stampCoordinate, logicCoordinate);
-        log.info("     classifier data before: " + cd);
-        if (cd.getLastClassifyInstant() != null) {
-            log.info("Incremental classification ok.");
-            StampPosition lastClassifyPosition = new StampPositionImpl(
-                    cd.getLastClassifyInstant().toEpochMilli(),
-                    editCoordinate.getPathSequence());
-            SememeSequenceSet modifiedSememeSequences = getSememeService().
-                    getSememeSequencesForComponentsFromAssemblageModifiedAfterPosition(
-                            conceptNidSetToClassify,
-                            logicCoordinate.getStatedAssemblageSequence(),
-                            lastClassifyPosition);
-            log.info("Modified graph count: " + modifiedSememeSequences.size());
-            if (modifiedSememeSequences.isEmpty()) {
-                log.info("No changes to classify.");
-            } else {
-                ConceptSequenceSet modifiedConcepts
-                        = getIdentifierService().getConceptSequencesForReferencedComponents(modifiedSememeSequences);
-                log.info("Modified concept count: " + modifiedConcepts.size());
-
-                processIncrementalStatedAxioms(stampCoordinate, logicCoordinate,
-                        NidSet.of(modifiedConcepts), cd,
-                        logicGraphMembers,
-                        rejectedLogicGraphMembers);
-                log.info("classifying new axioms.");
-                cd.incrementalClassify();
-            }
-
-        } else {
-            log.info("Full classification required.");
-            processAllStatedAxioms(stampCoordinate, logicCoordinate,
-                    cd, logicGraphMembers);
-            log.info("classifying all axioms.");
-            cd.classify();
-        }
-        log.info("     classifier data after: " + cd);
-
-        log.info("getting results.");
-        Ontology res = cd.getClassifiedOntology();
-        newConcepts.stream().forEach((sequence) -> {
-            au.csiro.ontology.Node incrementalNode = res.getNode(Integer.toString(sequence));
-
-            log.info("Incremental concept: " + sequence);
-            log.info("  Parents: " + incrementalNode.getParents());
-            log.info("  Equivalent concepts: " + incrementalNode.getEquivalentConcepts());
-            log.info("  Child concepts: " + incrementalNode.getChildren());
-        });
-        ClassifierResults classifierResults = collectResults(res, res.getAffectedNodes());
-        // TODO write back. 
-        Instant incrementalEnd = Instant.now();
-        Duration incrementalClassifyDuration = Duration.between(incrementalStart, incrementalEnd);
-        log.info("  Incremental classify duration: " + incrementalClassifyDuration);
-        return classifierResults;
-    }
-
     protected HashTreeWithBitSets getStatedTaxonomyGraph() {
         try {
             IntStream conceptSequenceStream = getIdentifierService().getParallelConceptSequenceStream();
             GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) getTaxonomyService()).getOriginDestinationTaxonomyRecords(),
-                    ViewCoordinates.getDevelopmentStatedLatest());
+                    ViewCoordinates.getDevelopmentStatedLatestActiveOnly());
             HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
                     HashTreeBuilder::new,
                     collector,
@@ -385,52 +217,15 @@ public class ClassifierProvider implements ClassifierService {
     }
 
     protected HashTreeWithBitSets getInferredTaxonomyGraph() {
-        try {
-            IntStream conceptSequenceStream = getIdentifierService().getParallelConceptSequenceStream();
-            GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) getTaxonomyService()).getOriginDestinationTaxonomyRecords(),
-                    ViewCoordinates.getDevelopmentInferredLatest());
-            HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
-                    HashTreeBuilder::new,
-                    collector,
-                    collector);
-            HashTreeWithBitSets resultGraph = graphBuilder.getSimpleDirectedGraphGraph();
-            return resultGraph;
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    protected void processAllStatedAxioms(StampCoordinate stampCoordinate, LogicCoordinate logicCoordinate, ClassifierData cd, AtomicInteger logicGraphMembers) {
-        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
-        sememeSnapshot.getLatestActiveSememeVersionsFromAssemblage(logicCoordinate.getStatedAssemblageSequence()).forEach(
-                (LatestVersion<LogicGraphSememeImpl> latest) -> {
-                    LogicGraphSememeImpl lgs = latest.value();
-                    int conceptSequence = getIdentifierService().getConceptSequence(lgs.getReferencedComponentNid());
-                    if (getConceptService().isConceptActive(conceptSequence, stampCoordinate)) {
-                        cd.translate(lgs);
-                        logicGraphMembers.incrementAndGet();
-                    }
-                });
-    }
-
-    protected void processIncrementalStatedAxioms(StampCoordinate stampCoordinate,
-            LogicCoordinate logicCoordinate, NidSet conceptNidSetToClassify,
-            ClassifierData cd, AtomicInteger logicGraphMembers,
-            AtomicInteger rejectedLogicGraphMembers) {
-
-        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
-        conceptNidSetToClassify.stream().forEach((conceptNid) -> {
-            sememeSnapshot.getLatestActiveSememeVersionsForComponentFromAssemblage(conceptNid,
-                    logicCoordinate.getStatedAssemblageSequence()).forEach((LatestVersion<LogicGraphSememeImpl> latest) -> {
-                        LogicGraphSememeImpl lgs = latest.value();
-                        if (conceptNidSetToClassify.contains(lgs.getReferencedComponentNid())) {
-                            cd.translateForIncremental(lgs);
-                            logicGraphMembers.incrementAndGet();
-                        } else {
-                            rejectedLogicGraphMembers.incrementAndGet();
-                        }
-                    });
-        });
+        IntStream conceptSequenceStream = getIdentifierService().getParallelConceptSequenceStream();
+        GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) getTaxonomyService()).getOriginDestinationTaxonomyRecords(),
+                ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
+        HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
+                HashTreeBuilder::new,
+                collector,
+                collector);
+        HashTreeWithBitSets resultGraph = graphBuilder.getSimpleDirectedGraphGraph();
+        return resultGraph;
     }
 
     private void printGraph(StringBuilder builder, String prefix, ConceptChronicle chronicle,
@@ -460,7 +255,7 @@ public class ClassifierProvider implements ClassifierService {
                 = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
 
         List<LatestVersion<LogicalExpressionOchreImpl>> latestVersions
-                = ssp.getLatestActiveSememeVersionsForComponentFromAssemblage(
+                = ssp.getLatestSememeVersionsForComponentFromAssemblage(
                         conceptId, logicAssemblageId).map((LatestVersion<LogicGraphSememeImpl> lgs) -> {
                             LogicalExpressionOchreImpl expressionValue
                             = new LogicalExpressionOchreImpl(lgs.value().getGraphData(), DataSource.INTERNAL, lgs.value().getReferencedComponentNid());
@@ -489,41 +284,9 @@ public class ClassifierProvider implements ClassifierService {
     }
 
     @Override
-    public int getConceptSequenceForExpression(LogicalExpression expression,
-            StampCoordinate stampCoordinate,
-            LogicCoordinate logicCoordinate,
+    public Task<Integer> getConceptSequenceForExpression(LogicalExpression expression,
             EditCoordinate editCoordinate) {
-
-        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
-        Optional<LatestVersion<LogicGraphSememeImpl>> match = sememeSnapshot.
-                getLatestActiveSememeVersionsFromAssemblage(
-                        logicCoordinate.getStatedAssemblageSequence()).
-                filter((LatestVersion<LogicGraphSememeImpl> t) -> {
-                    LogicGraphSememeImpl lgs = t.value();
-                    LogicalExpressionOchreImpl existingGraph = new LogicalExpressionOchreImpl(lgs.getGraphData(), DataSource.INTERNAL);
-                    return existingGraph.equals(expression);
-                }).findFirst();
-
-        if (match.isPresent()) {
-            LogicGraphSememeImpl lgs = match.get().value();
-            return getIdentifierService().getConceptSequence(lgs.getReferencedComponentNid());
-        }
-
-        UUID uuidForNewConcept = UUID.randomUUID();
-        ConceptBuilderService conceptBuilderService = LookupService.getService(ConceptBuilderService.class);
-        conceptBuilderService.setDefaultLanguageForDescriptions(IsaacMetadataAuxiliaryBinding.ENGLISH);
-        conceptBuilderService.setDefaultDialectAssemblageForDescriptions(IsaacMetadataAuxiliaryBinding.US_ENGLISH_DIALECT);
-        conceptBuilderService.setDefaultLogicCoordinate(logicCoordinate);
-        ConceptBuilder builder = conceptBuilderService.getDefaultConceptBuilder(
-                uuidForNewConcept.toString(), "expression", expression);
-
-        ConceptChronology concept = builder.build(editCoordinate, ChangeCheckerMode.INACTIVE);
-        try {
-            getCommitService().commit("Expression commit.").get();
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException(ex);
-        }
-        return concept.getConceptSequence();
+        return GetConceptSequenceForExpressionTask.create(expression, this, editCoordinate);
     }
 
 }
