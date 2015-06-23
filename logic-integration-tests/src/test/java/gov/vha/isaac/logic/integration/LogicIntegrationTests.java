@@ -47,9 +47,14 @@ import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
+<<<<<<< HEAD
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import gov.vha.isaac.ochre.util.UuidT3Generator;
+=======
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.util.WorkExecutors;
+>>>>>>> 7c8be355c060fad9f9cb7076033a86cfca1a07e2
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -167,12 +172,29 @@ public class LogicIntegrationTests {
             loadDatabase();
         }
         
+<<<<<<< HEAD
         LogicService logicService = LookupService.getService(LogicService.class);
         LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
         StampCoordinate stampCoordinate = StampCoordinates.getDevelopmentLatestActiveOnly();
         ClassifierService classifier = logicService.getClassifierService(stampCoordinate, logicCoordinate, EditCoordinates.getDefaultUserSolorOverlay());
         Task<ClassifierResults> classifyTask = classifier.classify();
         ClassifierResults results = classifyTask.get();
+=======
+        LogicService logic = LookupService.getService(LogicService.class);
+
+        if (!dbExists) {
+            if (LookupService.getService(ConfigurationService.class).getConceptModel() == ConceptModel.OTF_CONCEPT_MODEL) {
+                
+                logic.startInitialize(LogicCoordinates.getStandardElProfile()).get();
+            }
+        }
+
+        Task<ClassifierResults> classifyTask = logic.startFullClassification(StampCoordinates.getDevelopmentLatest(), 
+                LogicCoordinates.getStandardElProfile(), EditCoordinates.getDefaultUserSolorOverlay());
+        
+        ClassifierResults results = classifyTask.get();
+        
+>>>>>>> 7c8be355c060fad9f9cb7076033a86cfca1a07e2
         log.info(results);
         logResultDetails(results, StampCoordinates.getDevelopmentLatest());
         
