@@ -186,9 +186,9 @@ public class LogicProvider implements LogicService {
         HashMap<RelationshipAdaptorChronicleKey, RelationshipAdaptorChronologyImpl> conceptDestinationRelationshipMap = new HashMap<>();
 
         getTaxonomyService().getAllRelationshipOriginSequences(conceptChronology.getConceptSequence()).forEach((originConceptSequence) -> {
-            statedDefinitions.addAll(getSememeService().getSememesForComponentFromAssemblage(conceptChronology.getNid(),
+            statedDefinitions.addAll(getSememeService().getSememesForComponentFromAssemblage(originConceptSequence,
                     logicCoordinate.getStatedAssemblageSequence()).collect(Collectors.toList()));
-            inferredDefinitions.addAll(getSememeService().getSememesForComponentFromAssemblage(conceptChronology.getNid(),
+            inferredDefinitions.addAll(getSememeService().getSememesForComponentFromAssemblage(originConceptSequence,
                     logicCoordinate.getInferredAssemblageSequence()).collect(Collectors.toList()));
         });
 
@@ -268,12 +268,12 @@ public class LogicProvider implements LogicService {
             PremiseType premiseType) {
 
         Stream.Builder<RelationshipVersionAdaptorImpl> streamBuilder = Stream.builder();
-        int conceptSequence = getIdentifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid());
+        int originConceptSequence = getIdentifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid());
         logicGraphChronology.getVersionList().forEach((logicVersion) -> {
             LogicalExpressionOchreImpl expression
                     = new LogicalExpressionOchreImpl(logicVersion.getGraphData(),
                             DataSource.INTERNAL,
-                            conceptSequence);
+                            originConceptSequence);
 
             expression.getRoot()
                     .getChildStream().forEach((necessaryOrSufficientSet) -> {
@@ -282,14 +282,14 @@ public class LogicProvider implements LogicService {
                             switch (aNode.getNodeSemantic()) {
                                 case CONCEPT:
                                     streamBuilder.accept(
-                                            createIsaRel(getIdentifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid()),
+                                            createIsaRel(originConceptSequence,
                                                     (ConceptNodeWithNids) aNode,
                                                     logicVersion.getStampSequence(),
                                                     premiseType));
                                     break;
                                 case ROLE_SOME:
 
-                                    createSomeRole(getIdentifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid()),
+                                    createSomeRole(originConceptSequence,
                                             (RoleNodeSomeWithNids) aNode,
                                             logicVersion.getStampSequence(),
                                             premiseType, 0).forEach((someRelAdaptor) -> {
@@ -307,15 +307,15 @@ public class LogicProvider implements LogicService {
     }
 
     private RelationshipVersionAdaptorImpl createIsaRel(int originSequence,
-            ConceptNodeWithNids conceptNode,
+            ConceptNodeWithNids destinationNode,
             int stampSequence, PremiseType premiseType) {
-        int destinationSequence = getIdentifierService().getConceptSequence(conceptNode.getConceptNid());
+        int destinationSequence = getIdentifierService().getConceptSequence(destinationNode.getConceptNid());
         int typeSequence = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
         int group = 0;
 
         RelationshipAdaptorChronicleKeyImpl key
                 = new RelationshipAdaptorChronicleKeyImpl(originSequence,
-                        destinationSequence, typeSequence, group, premiseType, conceptNode.getNodeIndex());
+                        destinationSequence, typeSequence, group, premiseType, destinationNode.getNodeIndex());
         return new RelationshipVersionAdaptorImpl(key, stampSequence);
 
     }
