@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package gov.vha.isaac.logic.classify;
+package gov.vha.isaac.csiro.classify;
 
 import au.csiro.ontology.Ontology;
 import au.csiro.ontology.classification.IReasoner;
 import au.csiro.snorocket.core.SnorocketReasoner;
-import gov.vha.isaac.logic.axioms.GraphToAxiomTranslator;
+import gov.vha.isaac.csiro.axioms.GraphToAxiomTranslator;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
  * @author kec
  */
 public class ClassifierData {
-    private static ClassifierData singleton;
+    private static final AtomicReference<ClassifierData> singletonReference = new AtomicReference<>();
     
     GraphToAxiomTranslator graphToAxiomTranslator = new GraphToAxiomTranslator();
     GraphToAxiomTranslator incrementalToAxiomTranslator = new GraphToAxiomTranslator();
@@ -46,14 +47,18 @@ public class ClassifierData {
     }
     
     public static ClassifierData get(StampCoordinate stampCoordinate, LogicCoordinate logicCoordinate) {
-        if (singleton == null) {
-            singleton = new ClassifierData(stampCoordinate, logicCoordinate);
+        if (singletonReference.get() == null) {
+            singletonReference.compareAndSet(null, new ClassifierData(stampCoordinate, logicCoordinate));
         } else {
-            if (!singleton.stampCoordinate.equals(stampCoordinate) || !singleton.logicCoordinate.equals(logicCoordinate)) {
-                singleton = new ClassifierData(stampCoordinate, logicCoordinate);
+            ClassifierData classifierData = singletonReference.get();
+            
+            while (!classifierData.stampCoordinate.equals(stampCoordinate) || !classifierData.logicCoordinate.equals(logicCoordinate)) {
+                ClassifierData newClassifierData = new ClassifierData(stampCoordinate, logicCoordinate);
+                singletonReference.compareAndSet(classifierData, newClassifierData);
+                classifierData = singletonReference.get();
             } 
         }
-        return singleton;
+        return singletonReference.get();
     }
 
     public void translate(LogicGraphSememeImpl lgs) {

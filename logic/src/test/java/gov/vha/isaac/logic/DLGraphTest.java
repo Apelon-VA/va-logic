@@ -1,6 +1,9 @@
 package gov.vha.isaac.logic;
 
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionAbstract;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.api.logic.Node;
 
 /**
  * Created by kec on 12/12/14.
@@ -18,7 +21,7 @@ public class DLGraphTest {
         int defParentConceptSequence1 = 4;
         int defParentConceptSequence2 = 5;
 
-        LogicGraphBuilder lgb = new LogicGraphBuilder() {
+        LogicalExpressionAbstract lgb = new LogicalExpressionAbstract() {
             @Override
             public void create() {
                 Root(
@@ -34,7 +37,7 @@ public class DLGraphTest {
         lgb.init();
 
 
-        LogicGraph g = new LogicGraph();
+        LogicalExpressionOchreImpl g = new LogicalExpressionOchreImpl();
         g.getRoot().addChildren(
                 g.NecessarySet(
                         g.And(g.Concept(parentConceptSequence),

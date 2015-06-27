@@ -1,15 +1,16 @@
-package gov.vha.isaac.logic.classify;
+package gov.vha.isaac.csiro.classify;
 
 import au.csiro.ontology.Factory;
 import au.csiro.ontology.model.Axiom;
 import au.csiro.ontology.model.Concept;
 import au.csiro.ontology.model.ConceptInclusion;
 import au.csiro.ontology.model.Role;
-import gov.vha.isaac.logic.LogicGraph;
-import gov.vha.isaac.logic.Node;
-import gov.vha.isaac.logic.node.AndNode;
-import gov.vha.isaac.logic.node.internal.ConceptNodeWithNids;
-import gov.vha.isaac.logic.node.internal.RoleNodeSomeWithNids;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.api.logic.Node;
+import gov.vha.isaac.ochre.model.logic.node.AndNode;
+import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
+import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.apache.mahout.math.set.OpenIntHashSet;
 
@@ -22,7 +23,7 @@ import java.util.function.BiConsumer;
 
 // TODO move to CSIRO specific module
 
-public class AxiomAccumulator implements BiConsumer<Set<Axiom>, LogicGraph> {
+public class AxiomAccumulator implements BiConsumer<Set<Axiom>, LogicalExpressionOchreImpl> {
 
     BitSet conceptSequences;
     Concept[] concepts;
@@ -40,13 +41,13 @@ public class AxiomAccumulator implements BiConsumer<Set<Axiom>, LogicGraph> {
     }
 
     @Override
-    public void accept(Set<Axiom> axioms, LogicGraph logicGraphVersion) {
+    public void accept(Set<Axiom> axioms, LogicalExpressionOchreImpl logicGraphVersion) {
         if (conceptSequences.get(logicGraphVersion.getConceptSequence())) {
             axioms.addAll(generateAxioms(logicGraphVersion));
         }
     }
 
-    public Set<Axiom> generateAxioms(LogicGraph logicGraphVersion) {
+    public Set<Axiom> generateAxioms(LogicalExpressionOchreImpl logicGraphVersion) {
         Concept thisConcept = concepts[logicGraphVersion.getConceptSequence()];
         Set<Axiom> axioms = new HashSet<>();
         for (Node setNode : logicGraphVersion.getRoot().getChildren()) {
