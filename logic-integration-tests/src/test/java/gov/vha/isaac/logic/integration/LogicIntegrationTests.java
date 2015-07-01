@@ -17,6 +17,7 @@ import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
@@ -26,7 +27,9 @@ import gov.vha.isaac.ochre.api.classifier.ClassifierService;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
@@ -43,7 +46,10 @@ import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.PremiseType;
+import gov.vha.isaac.ochre.api.relationship.RelationshipVersionAdaptor;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronologyImpl;
 import gov.vha.isaac.ochre.util.UuidT3Generator;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +61,8 @@ import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.MultiException;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
+import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.jvnet.testing.hk2testng.HK2;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
@@ -163,6 +171,7 @@ public class LogicIntegrationTests {
         classifyTask = classifier.classify();
         results = classifyTask.get();
         log.info(results);
+        validateRelationshipAdaptors();
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
     }
@@ -251,4 +260,44 @@ public class LogicIntegrationTests {
 
         log.info(builder.toString());
     }
+    
+
+    private void validateRelationshipAdaptors() throws ValidationException {
+        System.out.println("\n\n");
+        log.info("Validating relationship adaptors...");
+        ConceptSpec pancreatitis = new ConceptSpec("Acute pancreatitis (disorder)", UUID.fromString("97eb352a-bfa3-304d-be67-2a2730e43bbb"));
+        ConceptChronology<? extends ConceptVersion> concept = Get.conceptService().getConcept(pancreatitis.getLenient().getPrimordialUuid());
+        System.out.println("GETTING ORIGINATING RELATIONSHIPS FOR CONCEPT: " + concept.toUserString() + " CONCEPT SEQUENCE: " + concept.getConceptSequence());
+        List<? extends SememeChronology<? extends RelationshipVersionAdaptor>> relationships = concept.getRelationshipListOriginatingFromConcept(LogicCoordinates.getStandardElProfile());
+        printFormatedRelationshipAdaptors(relationships);
+        
+        System.out.println("GETTING RELATIONSHIPS WITH CONCEPT AS DEST: " + concept.toUserString() + " CONCEPT SEQUENCE: " + concept.getConceptSequence());
+        List<? extends SememeChronology<? extends RelationshipVersionAdaptor>> relationshipsDest = concept.getRelationshipListWithConceptAsDestination(LogicCoordinates.getStandardElProfile());
+        printFormatedRelationshipAdaptors(relationshipsDest);
+        log.info("Finished validating relationship adaptors.");
+        System.out.println("\n\n");
+    }
+    
+    private void printFormatedRelationshipAdaptors(List<? extends SememeChronology<? extends RelationshipVersionAdaptor>> rels){
+        System.out.println("RELATIONSHIPS SIZE : " + rels.size());
+        for (SememeChronology<? extends RelationshipVersionAdaptor> s : rels) {
+            RelationshipAdaptorChronologyImpl rel = (RelationshipAdaptorChronologyImpl) s;
+            for(RelationshipVersionAdaptor rv : rel.getVersionList()){
+                int originSequence = rv.getOriginSequence();
+                ConceptChronology<? extends ConceptVersion> originConcept = LookupService.getService(ConceptService.class).getConcept(originSequence);
+                int destinationSequence = rv.getDestinationSequence();
+                ConceptChronology<? extends ConceptVersion> destinationConcept = LookupService.getService(ConceptService.class).getConcept(destinationSequence);
+                int group = rv.getGroup();
+                PremiseType premiseType = rv.getPremiseType();
+                int typeSequence = rv.getTypeSequence();
+                ConceptChronology<? extends ConceptVersion> typeConcept = LookupService.getService(ConceptService.class).getConcept(typeSequence);
+                int stampSequence = rv.getStampSequence();
+                State statusForStamp = Get.commitService().getStatusForStamp(stampSequence);
+                System.out.println("-NID-: " + rv.getNid() + " -ORIGIN-: " + originConcept.toUserString()
+                    + " -ORIGIN SEQUENCE-: " + originSequence +" -TYPE-: " + typeConcept.toUserString()
+                    + " -DEST-: " + destinationConcept.toUserString() + " -DEST SEQUENCE: " + destinationSequence
+                    + " -GROUP-: " + group + " -CHAR-: " + premiseType + " -STATUS-: " + statusForStamp);
+            }
+        }
+    }    
 }
