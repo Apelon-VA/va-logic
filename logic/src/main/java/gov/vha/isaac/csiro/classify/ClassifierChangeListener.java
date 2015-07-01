@@ -15,8 +15,7 @@
  */
 package gov.vha.isaac.csiro.classify;
 
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
@@ -32,14 +31,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class ClassifierChangeListener implements ChronologyChangeListener {
     private static final Logger log = LogManager.getLogger();
-    private static IdentifierService idService;
-    protected static IdentifierService getIdentifierService() {
-        if (idService == null) {
-            idService = LookupService.getService(IdentifierService.class);
-        }
-        return idService;
-    }
-    
+
     private final UUID listenerUuid = UUID.randomUUID();
     private final LogicCoordinate logicCoordinate;
     private final ClassifierProvider classifierProvider;
@@ -80,7 +72,7 @@ public class ClassifierChangeListener implements ChronologyChangeListener {
             // get classifier stampCoordinate for last classify. 
             // See if there is a change in the latest vs the last classify. 
             // See if the change has deletions, if so then incremental is not allowed. 
-            newConcepts.add(getIdentifierService().getConceptSequence(sc.getReferencedComponentNid()));
+            newConcepts.add(Get.identifierService().getConceptSequence(sc.getReferencedComponentNid()));
             log.info("Stated form change: " + sc);
         } else if (sc.getAssemblageSequence() == logicCoordinate.getInferredAssemblageSequence()) {
             log.info("Inferred form change: " + sc);

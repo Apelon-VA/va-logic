@@ -31,7 +31,7 @@ import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
 import gov.vha.isaac.ochre.model.logic.node.RootNode;
 import gov.vha.isaac.ochre.model.logic.node.SufficientSetNode;
 import gov.vha.isaac.ochre.api.DataSource;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.collections.ConcurrentSequenceObjectMap;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
@@ -39,7 +39,6 @@ import java.util.Calendar;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
  *
@@ -53,11 +52,10 @@ public class GraphToAxiomTranslator {
     ConcurrentHashMap<Integer, Role> sequenceLogicRoleMap = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Feature> sequenceLogicFeatureMap = new ConcurrentHashMap<>();
     Factory f = new Factory();
-    private static final IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
 
     private Concept getConcept(int name) {
         if (name < 0) {
-            name = sequenceProvider.getConceptSequence(name);
+            name = Get.identifierService().getConceptSequence(name);
         }
         Optional<Concept> optionalConcept = sequenceLogicConceptMap.get(name);
         if (optionalConcept.isPresent()) {
@@ -68,7 +66,7 @@ public class GraphToAxiomTranslator {
 
     private Feature getFeature(int name) {
         if (name < 0) {
-            name = sequenceProvider.getConceptSequence(name);
+            name = Get.identifierService().getConceptSequence(name);
         }
         Feature feature = sequenceLogicFeatureMap.get(name);
         if (feature != null) {
@@ -80,7 +78,7 @@ public class GraphToAxiomTranslator {
 
     private Role getRole(int name) {
         if (name < 0) {
-            name = sequenceProvider.getConceptSequence(name);
+            name = Get.identifierService().getConceptSequence(name);
         }
         Role role = sequenceLogicRoleMap.get(name);
         if (role != null) {

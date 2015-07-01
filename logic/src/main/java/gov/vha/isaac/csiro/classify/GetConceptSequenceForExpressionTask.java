@@ -15,11 +15,9 @@
  */
 package gov.vha.isaac.csiro.classify;
 
-import static gov.vha.isaac.csiro.classify.ClassifierProvider.getCommitService;
-import static gov.vha.isaac.csiro.classify.ClassifierProvider.getIdentifierService;
-import static gov.vha.isaac.csiro.classify.ClassifierProvider.getSememeService;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
@@ -74,7 +72,7 @@ public class GetConceptSequenceForExpressionTask extends Task<Integer> {
     @Override
     protected Integer call() throws Exception {
         try {
-            SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
+            SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = Get.sememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
             updateMessage("Searching existing definitions...");
             Optional<LatestVersion<LogicGraphSememeImpl>> match = sememeSnapshot.
                     getLatestSememeVersionsFromAssemblage(
@@ -89,7 +87,7 @@ public class GetConceptSequenceForExpressionTask extends Task<Integer> {
             if (match.isPresent()) {
                 LogicGraphSememeImpl lgs = match.get().value();
 
-                return getIdentifierService().getConceptSequence(lgs.getReferencedComponentNid());
+                return Get.identifierService().getConceptSequence(lgs.getReferencedComponentNid());
             }
 
             updateMessage("Building new concept...");
@@ -104,7 +102,7 @@ public class GetConceptSequenceForExpressionTask extends Task<Integer> {
             ConceptChronology concept = builder.build(statedEditCoordinate, ChangeCheckerMode.INACTIVE);
             updateMessage("Commiting new expression...");
             try {
-                getCommitService().commit("Expression commit.").get();
+                Get.commitService().commit("Expression commit.").get();
                 updateMessage("Classifying new concept...");
                 classifierProvider.classify().get();
             } catch (InterruptedException | ExecutionException ex) {

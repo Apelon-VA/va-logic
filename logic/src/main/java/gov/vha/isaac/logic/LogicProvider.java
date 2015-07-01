@@ -20,19 +20,19 @@ import gov.vha.isaac.csiro.classify.ClassifierProvider;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.Get;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.Node;
 import gov.vha.isaac.ochre.api.logic.NodeSemantic;
 import gov.vha.isaac.ochre.api.relationship.RelationshipAdaptorChronicleKey;
@@ -44,12 +44,14 @@ import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
 import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronicleKeyImpl;
 import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronologyImpl;
 import gov.vha.isaac.ochre.model.relationship.RelationshipVersionAdaptorImpl;
+import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -71,33 +73,6 @@ public class LogicProvider implements LogicService {
     private static final Logger log = LogManager.getLogger();
 
     private static final Map<ClassifierServiceKey, ClassifierService> classifierServiceMap = new ConcurrentHashMap<>();
-
-    private static IdentifierService identifierService;
-
-    private static IdentifierService getIdentifierService() {
-        if (identifierService == null) {
-            identifierService = LookupService.getService(IdentifierService.class);
-        }
-        return identifierService;
-    }
-
-    private static SememeService sememeService;
-
-    protected static SememeService getSememeService() {
-        if (sememeService == null) {
-            sememeService = LookupService.getService(SememeService.class);
-        }
-        return sememeService;
-    }
-
-    private static TaxonomyService taxonomyService;
-
-    private static TaxonomyService getTaxonomyService() {
-        if (taxonomyService == null) {
-            taxonomyService = LookupService.getService(TaxonomyService.class);
-        }
-        return taxonomyService;
-    }
 
     private LogicProvider() {
         //For HK2
@@ -185,10 +160,10 @@ public class LogicProvider implements LogicService {
         Stream.Builder<RelationshipAdaptorChronologyImpl> streamBuilder = Stream.builder();
         HashMap<RelationshipAdaptorChronicleKey, RelationshipAdaptorChronologyImpl> conceptDestinationRelationshipMap = new HashMap<>();
 
-        getTaxonomyService().getAllRelationshipOriginSequences(conceptChronology.getConceptSequence()).forEach((originConceptSequence) -> {
-            statedDefinitions.addAll(getSememeService().getSememesForComponentFromAssemblage(originConceptSequence,
+        Get.taxonomyService().getAllRelationshipOriginSequences(conceptChronology.getConceptSequence()).forEach((originConceptSequence) -> {
+            statedDefinitions.addAll(Get.sememeService().getSememesForComponentFromAssemblage(originConceptSequence,
                     logicCoordinate.getStatedAssemblageSequence()).collect(Collectors.toList()));
-            inferredDefinitions.addAll(getSememeService().getSememesForComponentFromAssemblage(originConceptSequence,
+            inferredDefinitions.addAll(Get.sememeService().getSememesForComponentFromAssemblage(originConceptSequence,
                     logicCoordinate.getInferredAssemblageSequence()).collect(Collectors.toList()));
         });
 
@@ -215,10 +190,10 @@ public class LogicProvider implements LogicService {
         HashMap<RelationshipAdaptorChronicleKey, RelationshipAdaptorChronologyImpl> conceptOriginRelationshipMap = new HashMap<>();
 
         List<SememeChronology<? extends SememeVersion>> statedDefinitions
-                = getSememeService().getSememesForComponentFromAssemblage(conceptChronology.getNid(),
+                = Get.sememeService().getSememesForComponentFromAssemblage(conceptChronology.getNid(),
                         logicCoordinate.getStatedAssemblageSequence()).collect(Collectors.toList());
         List<SememeChronology<? extends SememeVersion>> inferredDefinitions
-                = getSememeService().getSememesForComponentFromAssemblage(conceptChronology.getNid(),
+                = Get.sememeService().getSememesForComponentFromAssemblage(conceptChronology.getNid(),
                         logicCoordinate.getInferredAssemblageSequence()).collect(Collectors.toList());
 
         statedDefinitions.forEach((statedDef) -> {
@@ -268,7 +243,7 @@ public class LogicProvider implements LogicService {
             PremiseType premiseType) {
 
         Stream.Builder<RelationshipVersionAdaptorImpl> streamBuilder = Stream.builder();
-        int originConceptSequence = getIdentifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid());
+        int originConceptSequence = Get.identifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid());
         logicGraphChronology.getVersionList().forEach((logicVersion) -> {
             LogicalExpressionOchreImpl expression
                     = new LogicalExpressionOchreImpl(logicVersion.getGraphData(),
@@ -309,7 +284,7 @@ public class LogicProvider implements LogicService {
     private RelationshipVersionAdaptorImpl createIsaRel(int originSequence,
             ConceptNodeWithNids destinationNode,
             int stampSequence, PremiseType premiseType) {
-        int destinationSequence = getIdentifierService().getConceptSequence(destinationNode.getConceptNid());
+        int destinationSequence = Get.identifierService().getConceptSequence(destinationNode.getConceptNid());
         int typeSequence = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
         int group = 0;
 
@@ -341,11 +316,11 @@ public class LogicProvider implements LogicService {
             int destinationSequence;
             if (restriction.getNodeSemantic() == NodeSemantic.CONCEPT) {
                 ConceptNodeWithNids restrictionNode = (ConceptNodeWithNids) someNode.getOnlyChild();
-                destinationSequence = getIdentifierService().getConceptSequence(restrictionNode.getConceptNid());
+                destinationSequence = Get.identifierService().getConceptSequence(restrictionNode.getConceptNid());
             } else {
                 destinationSequence = IsaacMetadataAuxiliaryBinding.ANONYMOUS_CONCEPT.getSequence();
             }
-            int typeSequence = getIdentifierService().getConceptSequence(someNode.getTypeConceptNid());
+            int typeSequence = Get.identifierService().getConceptSequence(someNode.getTypeConceptNid());
 
             RelationshipAdaptorChronicleKeyImpl key
                     = new RelationshipAdaptorChronicleKeyImpl(originSequence,
@@ -353,6 +328,41 @@ public class LogicProvider implements LogicService {
             roleStream.accept(new RelationshipVersionAdaptorImpl(key, stampSequence));
         }
         return roleStream.build();
+    }
+
+    @Override
+    public Optional<LatestVersion<? extends LogicalExpression>> getLogicalExpression(int conceptId, int logicAssemblageId,
+            StampCoordinate stampCoordinate) {
+        SememeSnapshotService<LogicGraphSememeImpl> ssp
+                = Get.sememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
+
+        List<LatestVersion<LogicalExpressionOchreImpl>> latestVersions
+                = ssp.getLatestSememeVersionsForComponentFromAssemblage(
+                        conceptId, logicAssemblageId).map((LatestVersion<LogicGraphSememeImpl> lgs) -> {
+                            LogicalExpressionOchreImpl expressionValue
+                            = new LogicalExpressionOchreImpl(lgs.value().getGraphData(), DataSource.INTERNAL, lgs.value().getReferencedComponentNid());
+                            LatestVersion<LogicalExpressionOchreImpl> latestExpressionValue = new LatestVersion<>(expressionValue);
+
+                            if (lgs.contradictions().isPresent()) {
+                                lgs.contradictions().get().forEach((LogicGraphSememeImpl contradiction) -> {
+                                    LogicalExpressionOchreImpl contradictionValue
+                                    = new LogicalExpressionOchreImpl(contradiction.getGraphData(), DataSource.INTERNAL, contradiction.getReferencedComponentNid());
+                                    latestExpressionValue.addLatest(contradictionValue);
+                                });
+                            }
+
+                            return latestExpressionValue;
+                        }).collect(Collectors.toList());
+
+        if (latestVersions.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (latestVersions.size() > 1) {
+            throw new IllegalStateException("More than one LogicGraphSememeImpl for concept in assemblage: "
+                    + latestVersions);
+        }
+        return Optional.of(latestVersions.get(0));
     }
 
 }

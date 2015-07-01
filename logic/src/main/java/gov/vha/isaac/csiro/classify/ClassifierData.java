@@ -17,7 +17,6 @@ package gov.vha.isaac.csiro.classify;
 
 import au.csiro.ontology.Ontology;
 import au.csiro.ontology.classification.IReasoner;
-import au.csiro.snorocket.core.SnorocketReasoner;
 import gov.vha.isaac.csiro.axioms.GraphToAxiomTranslator;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
@@ -34,7 +33,7 @@ public class ClassifierData {
     
     GraphToAxiomTranslator graphToAxiomTranslator = new GraphToAxiomTranslator();
     GraphToAxiomTranslator incrementalToAxiomTranslator = new GraphToAxiomTranslator();
-    IReasoner reasoner = new SnorocketReasoner();
+    IReasoner reasoner = new IsaacReasoner();
 
     Instant lastClassifyInstant;
 

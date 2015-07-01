@@ -5,7 +5,6 @@
  */
 package gov.vha.isaac.logic.integration;
 
-import gov.vha.isaac.cradle.identifier.IdentifierProvider;
 import gov.vha.isaac.ochre.api.logic.LogicService;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
@@ -15,10 +14,9 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DataSource;
-import gov.vha.isaac.ochre.api.IdentifiedObjectService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
@@ -26,10 +24,8 @@ import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
 import gov.vha.isaac.ochre.api.classifier.ClassifierService;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
-import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
@@ -44,14 +40,11 @@ import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import gov.vha.isaac.ochre.util.UuidT3Generator;
-import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -76,61 +69,7 @@ import org.testng.annotations.Test;
 public class LogicIntegrationTests {
 
     private static final Logger log = LogManager.getLogger();
-    private static IdentifierProvider identifierProvider;
-    private static TaxonomyService taxonomyProvider;
-    private static CommitService commitProvider;
-    private static IdentifiedObjectService identifiedObjectProvider;
-    private static ConceptService conceptService;
 
-    public static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
-
-    public static IdentifiedObjectService getIdentifiedObjectService() {
-        if (identifiedObjectProvider == null) {
-            identifiedObjectProvider = LookupService.getService(IdentifiedObjectService.class);
-        }
-        return identifiedObjectProvider;
-    }
-
-    /**
-     * @return the identifierProvider
-     */
-    public static IdentifierProvider getIdentifierService() {
-        if (identifierProvider == null) {
-            identifierProvider = LookupService.getService(IdentifierProvider.class);
-        }
-        return identifierProvider;
-    }
-
-    /**
-     * @return the taxonomyProvider
-     */
-    public static TaxonomyService getTaxonomyService() {
-        if (taxonomyProvider == null) {
-            taxonomyProvider = LookupService.getService(TaxonomyService.class);
-        }
-        return taxonomyProvider;
-    }
-
-    public static CommitService getCommitService() {
-        if (commitProvider == null) {
-            commitProvider = LookupService.getService(CommitService.class);
-        }
-        return commitProvider;
-    }
-
-    private static SememeService sememeService;
-
-    public static SememeService getSememeService() {
-        if (sememeService == null) {
-            sememeService = LookupService.getService(SememeService.class);
-        }
-        return sememeService;
-    }
     private boolean dbExists = false;
 
     @BeforeSuite
@@ -182,16 +121,16 @@ public class LogicIntegrationTests {
 
         UUID bleedingSnomedUuid = UuidT3Generator.fromSNOMED(131148009L);
 
-        ConceptChronology<? extends ConceptVersion> bleedingConcept1 = getConceptService().getConcept(bleedingSnomedUuid);
+        ConceptChronology<? extends ConceptVersion> bleedingConcept1 = Get.conceptService().getConcept(bleedingSnomedUuid);
         System.out.println("\nFound [1] nid: " + bleedingConcept1.getNid());
-        System.out.println("Found [1] concept sequence: " + getIdentifierService().getConceptSequence(bleedingConcept1.getNid()));
+        System.out.println("Found [1] concept sequence: " + Get.identifierService().getConceptSequence(bleedingConcept1.getNid()));
         System.out.println("Found [1]: " + bleedingConcept1.toUserString() + "\n " + bleedingConcept1.toString());
 
         Optional<LatestVersion<? extends LogicalExpression>> lg1
-                = classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getStatedAssemblageSequence(), stampCoordinate);
+                = logicService.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getStatedAssemblageSequence(), stampCoordinate);
         System.out.println("Stated logic graph:  " + lg1);
         Optional<LatestVersion<? extends LogicalExpression>> lg2
-                = classifier.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getInferredAssemblageSequence(), stampCoordinate);
+                = logicService.getLogicalExpression(bleedingConcept1.getNid(), logicCoordinate.getInferredAssemblageSequence(), stampCoordinate);
         System.out.println("Inferred logic graph:  " + lg2);
 
         // Add new concept and definition here to classify. 
@@ -204,7 +143,7 @@ public class LogicIntegrationTests {
                 = LookupService.getService(LogicalExpressionBuilderService.class);
         LogicalExpressionBuilder defBuilder = expressionBuilderService.getLogicalExpressionBuilder();
 
-        NecessarySet(And(ConceptAssertion(getConceptService().getConcept(Snomed.BLEEDING_FINDING.getSequence()), defBuilder)));
+        NecessarySet(And(ConceptAssertion(Get.conceptService().getConcept(Snomed.BLEEDING_FINDING.getSequence()), defBuilder)));
 
         LogicalExpression def = defBuilder.build();
         log.info("Created definition:\n\n " + def);
@@ -219,7 +158,7 @@ public class LogicIntegrationTests {
             component.toString();
         }
 
-        getCommitService().commit("Commit for logic integration incremental classification test. ").get();
+        Get.commitService().commit("Commit for logic integration incremental classification test. ").get();
 
         classifyTask = classifier.classify();
         results = classifyTask.get();
@@ -267,7 +206,7 @@ public class LogicIntegrationTests {
         Path logicMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
 
-        Task<Integer> loadTask = tts.startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
+        Task<Integer> loadTask = tts.startLoadTask(ConceptModel.OCHRE_CONCEPT_MODEL, IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
                 snomedDataFile, logicMetadataFile);
         int conceptCount = loadTask.get();
         Instant finish = Instant.now();
@@ -279,19 +218,19 @@ public class LogicIntegrationTests {
         double msPerConcept = 1.0d * duration.toMillis() / conceptCount;
         log.info("  msPerConcept: {}", msPerConcept);
 
-        log.info("  concepts in map: {}", LookupService.getService(ConceptService.class).getConceptCount());
+        log.info("  concepts in map: {}", Get.conceptService().getConceptCount());
 
-        log.info("  sequences map: {}", getIdentifierService().getConceptSequenceStream().distinct().count());
+        log.info("  sequences map: {}", Get.identifierService().getConceptSequenceStream().distinct().count());
     }
 
     private void logResultDetails(ClassifierResults results, StampCoordinate stampCoordinate) {
         StringBuilder builder = new StringBuilder();
-        SememeSnapshotService<LogicGraphSememe> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememe.class, stampCoordinate);
+        SememeSnapshotService<LogicGraphSememe> sememeSnapshot = Get.sememeService().getSnapshot(LogicGraphSememe.class, stampCoordinate);
         results.getEquivalentSets().forEach((conceptSequenceSet) -> {
             builder.append("--------- Equivalent Set ---------\n");
             conceptSequenceSet.stream().forEach((conceptSequence) -> {
-                int conceptNid = getIdentifierService().getConceptNid(conceptSequence);
-                Optional<? extends ObjectChronology<? extends StampedVersion>> optionalConcept = getIdentifiedObjectService().getIdentifiedObjectChronology(conceptNid);
+                int conceptNid = Get.identifierService().getConceptNid(conceptSequence);
+                Optional<? extends ObjectChronology<? extends StampedVersion>> optionalConcept = Get.getIdentifiedObjectService().getIdentifiedObjectChronology(conceptNid);
                 builder.append(conceptSequence);
                 if (optionalConcept.isPresent()) {
                     builder.append(" ");

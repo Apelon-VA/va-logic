@@ -16,9 +16,7 @@
 package gov.vha.isaac.csiro.classify;
 
 import au.csiro.ontology.Ontology;
-import static gov.vha.isaac.csiro.classify.ClassifierProvider.getConceptService;
-import static gov.vha.isaac.csiro.classify.ClassifierProvider.getIdentifierService;
-import static gov.vha.isaac.csiro.classify.ClassifierProvider.getSememeService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
@@ -118,7 +116,7 @@ public class ClassifyTask extends Task<ClassifierResults> {
             StampPosition lastClassifyPosition = new StampPositionImpl(
                     cd.getLastClassifyInstant().toEpochMilli(),
                     editCoordinate.getPathSequence());
-            SememeSequenceSet modifiedSememeSequences = getSememeService().
+            SememeSequenceSet modifiedSememeSequences = Get.sememeService().
                     getSememeSequencesForComponentsFromAssemblageModifiedAfterPosition(
                             conceptNidSetToClassify,
                             logicCoordinate.getStatedAssemblageSequence(),
@@ -128,7 +126,7 @@ public class ClassifyTask extends Task<ClassifierResults> {
                 updateMessage("No changes to classify.");
             } else {
                 ConceptSequenceSet modifiedConcepts
-                        = getIdentifierService().getConceptSequencesForReferencedComponents(modifiedSememeSequences);
+                        = Get.identifierService().getConceptSequencesForReferencedComponents(modifiedSememeSequences);
                 updateMessage("Modified concept count: " + modifiedConcepts.size());
 
                 processIncrementalStatedAxioms(stampCoordinate, logicCoordinate,
@@ -249,12 +247,12 @@ public class ClassifyTask extends Task<ClassifierResults> {
 
 
     protected void processAllStatedAxioms(StampCoordinate stampCoordinate, LogicCoordinate logicCoordinate, ClassifierData cd, AtomicInteger logicGraphMembers) {
-        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
+        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = Get.sememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
         sememeSnapshot.getLatestSememeVersionsFromAssemblage(logicCoordinate.getStatedAssemblageSequence()).forEach(
                 (LatestVersion<LogicGraphSememeImpl> latest) -> {
                     LogicGraphSememeImpl lgs = latest.value();
-                    int conceptSequence = getIdentifierService().getConceptSequence(lgs.getReferencedComponentNid());
-                    if (getConceptService().isConceptActive(conceptSequence, stampCoordinate)) {
+                    int conceptSequence = Get.identifierService().getConceptSequence(lgs.getReferencedComponentNid());
+                    if (Get.conceptService().isConceptActive(conceptSequence, stampCoordinate)) {
                         cd.translate(lgs);
                         logicGraphMembers.incrementAndGet();
                     }
@@ -266,7 +264,7 @@ public class ClassifyTask extends Task<ClassifierResults> {
             ClassifierData cd, AtomicInteger logicGraphMembers,
             AtomicInteger rejectedLogicGraphMembers) {
 
-        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
+        SememeSnapshotService<LogicGraphSememeImpl> sememeSnapshot = Get.sememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
         conceptNidSetToClassify.stream().forEach((conceptNid) -> {
             sememeSnapshot.getLatestSememeVersionsForComponentFromAssemblage(conceptNid,
                     logicCoordinate.getStatedAssemblageSequence()).forEach((LatestVersion<LogicGraphSememeImpl> latest) -> {

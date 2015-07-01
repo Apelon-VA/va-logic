@@ -20,16 +20,9 @@ import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.api.DataSource;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
-import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
 import gov.vha.isaac.ochre.api.classifier.ClassifierService;
-import gov.vha.isaac.ochre.api.commit.CommitService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
-import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
@@ -44,10 +37,7 @@ import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
@@ -64,49 +54,6 @@ public class ClassifierProvider implements ClassifierService {
     private static boolean VERBOSE = false;
 
     private static final Logger log = LogManager.getLogger();
-    private static IdentifierService identifierService;
-    private static TaxonomyService taxonomyService;
-    private static SememeService sememeService;
-    private static CommitService commitService;
-    private static ConceptService conceptService;
-
-    public static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
-
-    public static CommitService getCommitService() {
-        if (commitService == null) {
-            commitService = LookupService.getService(CommitService.class);
-        }
-        return commitService;
-    }
-
-    public static IdentifierService getIdentifierService() {
-        if (identifierService == null) {
-            identifierService = LookupService.getService(IdentifierService.class);
-        }
-        return identifierService;
-    }
-
-    /**
-     * @return the taxonomyService
-     */
-    public static TaxonomyService getTaxonomyService() {
-        if (taxonomyService == null) {
-            taxonomyService = LookupService.getService(TaxonomyService.class);
-        }
-        return taxonomyService;
-    }
-
-    public static SememeService getSememeService() {
-        if (sememeService == null) {
-            sememeService = LookupService.getService(SememeService.class);
-        }
-        return sememeService;
-    }
 
     private final ClassifierChangeListener classifierChangeListener; // strong reference to prevent garbage collection
     StampCoordinate stampCoordinate;
@@ -121,7 +68,7 @@ public class ClassifierProvider implements ClassifierService {
         this.editCoordinate = editCoordinate;
         classifierChangeListener = new ClassifierChangeListener(
                 LogicCoordinates.getStandardElProfile(), this);
-        getCommitService().addChangeListener(classifierChangeListener);
+        Get.commitService().addChangeListener(classifierChangeListener);
     }
 
     public ConceptSequenceSet getNewConcepts() {
@@ -164,7 +111,7 @@ public class ClassifierProvider implements ClassifierService {
                 LogicalExpressionOchreImpl previousVersion = null;
                 for (LogicGraphSememeImpl lgmv : versions) {
                     LogicalExpressionOchreImpl lg = new LogicalExpressionOchreImpl(lgmv.getGraphData(), DataSource.INTERNAL,
-                            getIdentifierService().getConceptSequence(logicGraphMember.getReferencedComponentNid()));
+                            Get.identifierService().getConceptSequence(logicGraphMember.getReferencedComponentNid()));
                     printGraph(builder, "Version " + version++ + " stamp: " + Stamp.stampFromIntStamp(lgmv.getStampSequence()).toString() + "\n ",
                             conceptChronicle, maxGraphSize, lg.getNodeCount(), lg);
                     if (previousVersion != null) {
@@ -202,8 +149,8 @@ public class ClassifierProvider implements ClassifierService {
 
     protected HashTreeWithBitSets getStatedTaxonomyGraph() {
         try {
-            IntStream conceptSequenceStream = getIdentifierService().getParallelConceptSequenceStream();
-            GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) getTaxonomyService()).getOriginDestinationTaxonomyRecords(),
+            IntStream conceptSequenceStream = Get.identifierService().getParallelConceptSequenceStream();
+            GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) Get.taxonomyService()).getOriginDestinationTaxonomyRecords(),
                     ViewCoordinates.getDevelopmentStatedLatestActiveOnly());
             HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
                     HashTreeBuilder::new,
@@ -217,8 +164,8 @@ public class ClassifierProvider implements ClassifierService {
     }
 
     protected HashTreeWithBitSets getInferredTaxonomyGraph() {
-        IntStream conceptSequenceStream = getIdentifierService().getParallelConceptSequenceStream();
-        GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) getTaxonomyService()).getOriginDestinationTaxonomyRecords(),
+        IntStream conceptSequenceStream = Get.identifierService().getParallelConceptSequenceStream();
+        GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) Get.taxonomyService()).getOriginDestinationTaxonomyRecords(),
                 ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
         HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
                 HashTreeBuilder::new,
@@ -246,41 +193,6 @@ public class ClassifierProvider implements ClassifierService {
             builder.append("\n");
         });
         builder.append(" \n\n");
-    }
-
-    @Override
-    public Optional<LatestVersion<? extends LogicalExpression>> getLogicalExpression(int conceptId, int logicAssemblageId,
-            StampCoordinate stampCoordinate) {
-        SememeSnapshotService<LogicGraphSememeImpl> ssp
-                = getSememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
-
-        List<LatestVersion<LogicalExpressionOchreImpl>> latestVersions
-                = ssp.getLatestSememeVersionsForComponentFromAssemblage(
-                        conceptId, logicAssemblageId).map((LatestVersion<LogicGraphSememeImpl> lgs) -> {
-                            LogicalExpressionOchreImpl expressionValue
-                            = new LogicalExpressionOchreImpl(lgs.value().getGraphData(), DataSource.INTERNAL, lgs.value().getReferencedComponentNid());
-                            LatestVersion<LogicalExpressionOchreImpl> latestExpressionValue = new LatestVersion<>(expressionValue);
-
-                            if (lgs.contradictions().isPresent()) {
-                                lgs.contradictions().get().forEach((LogicGraphSememeImpl contradiction) -> {
-                                    LogicalExpressionOchreImpl contradictionValue
-                                    = new LogicalExpressionOchreImpl(contradiction.getGraphData(), DataSource.INTERNAL, contradiction.getReferencedComponentNid());
-                                    latestExpressionValue.addLatest(contradictionValue);
-                                });
-                            }
-
-                            return latestExpressionValue;
-                        }).collect(Collectors.toList());
-
-        if (latestVersions.isEmpty()) {
-            return Optional.empty();
-        }
-
-        if (latestVersions.size() > 1) {
-            throw new IllegalStateException("More than one LogicGraphSememeImpl for concept in assemblage: "
-                    + latestVersions);
-        }
-        return Optional.of(latestVersions.get(0));
     }
 
     @Override
