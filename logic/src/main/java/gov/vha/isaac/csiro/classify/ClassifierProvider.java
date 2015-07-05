@@ -17,6 +17,7 @@ package gov.vha.isaac.csiro.classify;
 
 import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
+import gov.vha.isaac.csiro.classify.tasks.AggregateClassifyTask;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.api.DataSource;
@@ -37,6 +38,7 @@ import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import javafx.concurrent.Task;
@@ -55,7 +57,6 @@ public class ClassifierProvider implements ClassifierService {
 
     private static final Logger log = LogManager.getLogger();
 
-    private final ClassifierChangeListener classifierChangeListener; // strong reference to prevent garbage collection
     StampCoordinate stampCoordinate;
     LogicCoordinate logicCoordinate;
     EditCoordinate editCoordinate;
@@ -66,27 +67,11 @@ public class ClassifierProvider implements ClassifierService {
         this.stampCoordinate = stampCoordinate;
         this.logicCoordinate = logicCoordinate;
         this.editCoordinate = editCoordinate;
-        classifierChangeListener = new ClassifierChangeListener(
-                LogicCoordinates.getStandardElProfile(), this);
-        Get.commitService().addChangeListener(classifierChangeListener);
-    }
-
-    public ConceptSequenceSet getNewConcepts() {
-        return classifierChangeListener.getNewConcepts();
-    }
-
-    public boolean incrementalAllowed() {
-        return classifierChangeListener.incrementalAllowed();
-    }
-
-    public void classifyComplete() {
-        classifierChangeListener.classifyComplete();
     }
 
     @Override
     public Task<ClassifierResults> classify() {
-        ClassifyTask task = ClassifyTask.create(this);
-        return task;
+        return AggregateClassifyTask.get(this.stampCoordinate, this.logicCoordinate);
     }
 
     public void printIfMoreNodes(int graphNodeCount, AtomicInteger maxGraphSize,

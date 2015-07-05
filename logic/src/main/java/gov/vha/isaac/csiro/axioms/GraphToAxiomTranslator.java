@@ -33,6 +33,7 @@ import gov.vha.isaac.ochre.model.logic.node.SufficientSetNode;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.ConcurrentSequenceObjectMap;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import java.util.Calendar;
@@ -51,8 +52,21 @@ public class GraphToAxiomTranslator {
     ConcurrentSequenceObjectMap<Concept> sequenceLogicConceptMap = new ConcurrentSequenceObjectMap<>();
     ConcurrentHashMap<Integer, Role> sequenceLogicRoleMap = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Feature> sequenceLogicFeatureMap = new ConcurrentHashMap<>();
+    ConceptSequenceSet loadedConcepts = new ConceptSequenceSet();
     Factory f = new Factory();
+    
 
+    public void clear() {
+        axioms.clear();
+        sequenceLogicRoleMap.clear();
+        sequenceLogicFeatureMap.clear();
+        sequenceLogicConceptMap.clear();
+        loadedConcepts.clear();
+    }
+    
+    public ConceptSequenceSet getLoadedConcepts() {
+        return loadedConcepts;
+    }
     private Concept getConcept(int name) {
         if (name < 0) {
             name = Get.identifierService().getConceptSequence(name);
@@ -88,12 +102,18 @@ public class GraphToAxiomTranslator {
         return sequenceLogicRoleMap.get(name);
     }
 
-    public void translate(LogicGraphSememe logicGraphSememe) {
+    /**
+     * Translates the logicGraphSememe into a set of axioms, and adds those axioms 
+     * to the internal set of axioms. 
+     * @param logicGraphSememe 
+     */
+    public void convertToAxiomsAndAdd(LogicGraphSememe logicGraphSememe) {
+        loadedConcepts.add(logicGraphSememe.getReferencedComponentNid());
         LogicalExpressionOchreImpl logicGraph = new LogicalExpressionOchreImpl(logicGraphSememe.getGraphData(), DataSource.INTERNAL);
         generateAxioms(logicGraph.getRoot(), logicGraphSememe.getReferencedComponentNid(), logicGraph);
     }
 
-    public Optional<Literal> generateLiterals(Node node, Concept c, LogicalExpressionOchreImpl logicGraph) {
+    private Optional<Literal> generateLiterals(Node node, Concept c, LogicalExpressionOchreImpl logicGraph) {
         switch (node.getNodeSemantic()) {
             case LITERAL_BOOLEAN:
                 LiteralNodeBoolean literalNodeBoolean = (LiteralNodeBoolean) node;
@@ -118,7 +138,7 @@ public class GraphToAxiomTranslator {
         }
     }
 
-    public Optional<Concept> generateAxioms(Node node, int conceptNid, LogicalExpressionOchreImpl logicGraph) {
+    private Optional<Concept> generateAxioms(Node node, int conceptNid, LogicalExpressionOchreImpl logicGraph) {
         switch (node.getNodeSemantic()) {
             case AND:
                 return processAnd((AndNode) node, conceptNid, logicGraph);

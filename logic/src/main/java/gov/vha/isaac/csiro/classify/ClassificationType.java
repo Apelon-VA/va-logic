@@ -15,18 +15,10 @@
  */
 package gov.vha.isaac.csiro.classify;
 
-import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
-import gov.vha.isaac.ochre.api.task.TimedTask;
-
 /**
  *
  * @author kec
  */
-public class ClassifyTaskWithProgress extends TimedTask<ClassifierResults>{
-
-    @Override
-    protected ClassifierResults call() throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-    
+public enum ClassificationType {
+    COMPLETE, INCREMENTAL;
 }

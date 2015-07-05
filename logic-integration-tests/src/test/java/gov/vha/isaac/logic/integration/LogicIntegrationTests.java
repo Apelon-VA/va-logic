@@ -239,7 +239,7 @@ public class LogicIntegrationTests {
             builder.append("--------- Equivalent Set ---------\n");
             conceptSequenceSet.stream().forEach((conceptSequence) -> {
                 int conceptNid = Get.identifierService().getConceptNid(conceptSequence);
-                Optional<? extends ObjectChronology<? extends StampedVersion>> optionalConcept = Get.getIdentifiedObjectService().getIdentifiedObjectChronology(conceptNid);
+                Optional<? extends ObjectChronology<? extends StampedVersion>> optionalConcept = Get.identifiedObjectService().getIdentifiedObjectChronology(conceptNid);
                 builder.append(conceptSequence);
                 if (optionalConcept.isPresent()) {
                     builder.append(" ");
