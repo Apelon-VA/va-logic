@@ -23,15 +23,17 @@ import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author kec
  */
 public class ProcessClassificationResults extends TimedTask<ClassifierResults> {
+    private static final Logger log = LogManager.getLogger();
 
     StampCoordinate stampCoordinate;
     LogicCoordinate logicCoordinate;
@@ -55,6 +57,9 @@ public class ProcessClassificationResults extends TimedTask<ClassifierResults> {
         HashSet<ConceptSequenceSet> equivalentSets = new HashSet<>();
         affectedConcepts.parallelStream().forEach((conceptSequence) -> {
             Node node = res.getNode(Integer.toString(conceptSequence));
+            if (node == null) {
+                throw new RuntimeException("Null node for: " + conceptSequence);
+            }
             Set<String> equivalentConcepts = node.getEquivalentConcepts();
             if (node.getEquivalentConcepts().size() > 1) {
                 ConceptSequenceSet equivalentSet = new ConceptSequenceSet();

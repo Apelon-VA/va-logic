@@ -22,6 +22,7 @@ import gov.vha.isaac.csiro.axioms.GraphToAxiomTranslator;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
+import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
@@ -47,7 +48,7 @@ public class ClassifierData implements ChronologyChangeListener {
 
     private final UUID listenerUuid = UUID.randomUUID();
     private boolean incrementalAllowed = false;
-    GraphToAxiomTranslator graphToAxiomTranslator = new GraphToAxiomTranslator();
+    GraphToAxiomTranslator allGraphsToAxiomTranslator = new GraphToAxiomTranslator();
     GraphToAxiomTranslator incrementalToAxiomTranslator = new GraphToAxiomTranslator();
     IReasoner reasoner = new SnorocketReasoner();
 
@@ -80,12 +81,12 @@ public class ClassifierData implements ChronologyChangeListener {
     }
 
     public void clearAxioms() {
-        graphToAxiomTranslator.clear();
+        allGraphsToAxiomTranslator.clear();
         incrementalToAxiomTranslator.clear();
     }
 
     public void translate(LogicGraphSememeImpl lgs) {
-        graphToAxiomTranslator.convertToAxiomsAndAdd(lgs);
+        allGraphsToAxiomTranslator.convertToAxiomsAndAdd(lgs);
     }
 
     public void loadAxioms() {
@@ -93,14 +94,16 @@ public class ClassifierData implements ChronologyChangeListener {
             reasoner.loadAxioms(incrementalToAxiomTranslator.getAxioms());
             loadedConcepts = incrementalToAxiomTranslator.getLoadedConcepts();
         } else {
-            reasoner.loadAxioms(graphToAxiomTranslator.getAxioms());
-            loadedConcepts = incrementalToAxiomTranslator.getLoadedConcepts();
+            reasoner.loadAxioms(allGraphsToAxiomTranslator.getAxioms());
+            loadedConcepts = allGraphsToAxiomTranslator.getLoadedConcepts();
         }
     }
 
     public IReasoner classify() {
-        graphToAxiomTranslator.clear();
+        loadedConcepts = allGraphsToAxiomTranslator.getLoadedConcepts();
+        allGraphsToAxiomTranslator.clear();
         lastClassifyInstant = Instant.now();
+        
         if (lastClassifyType == null) {
             lastClassifyType = ClassificationType.COMPLETE;
             incrementalAllowed = true;
@@ -179,6 +182,11 @@ public class ClassifierData implements ChronologyChangeListener {
             }
         }
     }
+
+    @Override
+    public void handleCommit(CommitRecord commitRecord) {
+        // already handled with the handle change above. 
+    }
     
     public ConceptSequenceSet getAffectedConceptSequenceSet() {
         ConceptSequenceSet affectedConceptSequences = new ConceptSequenceSet();
@@ -198,7 +206,7 @@ public class ClassifierData implements ChronologyChangeListener {
     @Override
     public String toString() {
         return "ClassifierData{"
-                + "graphToAxiomTranslator=" + graphToAxiomTranslator
+                + "graphToAxiomTranslator=" + allGraphsToAxiomTranslator
                 + ",\n incrementalToAxiomTranslator=" + incrementalToAxiomTranslator
                 + ",\n reasoner=" + reasoner
                 + ",\n lastClassifyInstant=" + lastClassifyInstant

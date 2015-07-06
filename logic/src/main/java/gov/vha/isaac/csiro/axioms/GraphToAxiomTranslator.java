@@ -52,7 +52,7 @@ public class GraphToAxiomTranslator {
     ConcurrentSequenceObjectMap<Concept> sequenceLogicConceptMap = new ConcurrentSequenceObjectMap<>();
     ConcurrentHashMap<Integer, Role> sequenceLogicRoleMap = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Feature> sequenceLogicFeatureMap = new ConcurrentHashMap<>();
-    ConceptSequenceSet loadedConcepts = new ConceptSequenceSet();
+    ConcurrentSkipListSet<Integer> loadedConcepts = new ConcurrentSkipListSet<>();
     Factory f = new Factory();
     
 
@@ -65,7 +65,7 @@ public class GraphToAxiomTranslator {
     }
     
     public ConceptSequenceSet getLoadedConcepts() {
-        return loadedConcepts;
+        return ConceptSequenceSet.of(loadedConcepts);
     }
     private Concept getConcept(int name) {
         if (name < 0) {
