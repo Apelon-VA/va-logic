@@ -159,6 +159,7 @@ public class LogicIntegrationTests {
         ConceptBuilder builder = conceptBuilderService.getDefaultConceptBuilder(
                 "primitive child of bleeding", "test concept", def);
 
+        builder.getFullySpecifiedDescriptionBuilder().setAcceptableInDialectAssemblage(IsaacMetadataAuxiliaryBinding.US_ENGLISH_DIALECT);
         List createdComponents = new ArrayList();
         ConceptChronology concept = builder.build(EditCoordinates.getDefaultUserSolorOverlay(), ChangeCheckerMode.ACTIVE, createdComponents);
 
@@ -292,11 +293,9 @@ public class LogicIntegrationTests {
                 int typeSequence = rv.getTypeSequence();
                 ConceptChronology<? extends ConceptVersion> typeConcept = LookupService.getService(ConceptService.class).getConcept(typeSequence);
                 int stampSequence = rv.getStampSequence();
-                State statusForStamp = Get.commitService().getStatusForStamp(stampSequence);
-                System.out.println("-NID-: " + rv.getNid() + " -ORIGIN-: " + originConcept.toUserString()
-                    + " -ORIGIN SEQUENCE-: " + originSequence +" -TYPE-: " + typeConcept.toUserString()
-                    + " -DEST-: " + destinationConcept.toUserString() + " -DEST SEQUENCE: " + destinationSequence
-                    + " -GROUP-: " + group + " -CHAR-: " + premiseType + " -STATUS-: " + statusForStamp);
+                System.out.println("-NID-: " + rv.getNid() + " -TYPE-: " + typeConcept.toUserString()
+                    + " -DEST-: " + destinationConcept.toUserString() + "<" + destinationSequence
+                    + "> g: " + group + " " + premiseType + " " + Get.commitService().describeStampSequence(stampSequence));
             }
         }
     }    
