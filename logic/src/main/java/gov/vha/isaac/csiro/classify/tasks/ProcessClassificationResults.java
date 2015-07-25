@@ -15,8 +15,8 @@
  */
 package gov.vha.isaac.csiro.classify.tasks;
 
-import au.csiro.ontology.Node;
-import au.csiro.ontology.Ontology;
+import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.And;
+import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.NecessarySet;
 import gov.vha.isaac.csiro.classify.ClassifierData;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.ochre.api.DataTarget;
@@ -36,20 +36,22 @@ import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
-import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
 import gov.vha.isaac.ochre.api.logic.NodeSemantic;
 import gov.vha.isaac.ochre.api.logic.assertions.ConceptAssertion;
-import gov.vha.isaac.ochre.api.logic.assertions.SufficientSet;
 import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import au.csiro.ontology.Node;
+import au.csiro.ontology.Ontology;
 
 /**
  *
@@ -125,8 +127,10 @@ public class ProcessClassificationResults extends TimedTask<ClassifierResults> {
                     = sememeService.getSememeSequencesForComponentFromAssemblage(idService.getConceptNid(conceptSequence), logicCoordinate.getStatedAssemblageSequence());
             testForProperSetSize(inferredSememeSequences, conceptSequence, statedSememeSequences, sememeService);
 
-            SememeChronology<LogicGraphSememe> statedChronology = (SememeChronology<LogicGraphSememe>) sememeService.getSememe(statedSememeSequences.stream().findFirst().getAsInt());
-            Optional<LatestVersion<LogicGraphSememe>> latestStatedDefinitionOptional = statedChronology.getLatestVersion(LogicGraphSememe.class, stampCoordinate);
+            //SememeChronology<LogicGraphSememe> statedChronology = (SememeChronology<LogicGraphSememe>) sememeService.getSememe(statedSememeSequences.stream().findFirst().getAsInt());
+            SememeChronology rawStatedChronology = sememeService.getSememe(statedSememeSequences.stream().findFirst().getAsInt());
+
+            Optional<LatestVersion<LogicGraphSememe>> latestStatedDefinitionOptional = ((SememeChronology<LogicGraphSememe>)rawStatedChronology).getLatestVersion(LogicGraphSememe.class, stampCoordinate);
             if (latestStatedDefinitionOptional.isPresent()) {
                 LogicalExpressionBuilder inferredBuilder = logicalExpressionBuilderService.getLogicalExpressionBuilder();
 
@@ -162,7 +166,7 @@ public class ProcessClassificationResults extends TimedTask<ClassifierResults> {
                     NecessarySet(And(parentList.toArray(new ConceptAssertion[parentList.size()])));
                     LogicalExpression inferredExpression = inferredBuilder.build();
 
-                    SememeChronology<LogicGraphSememe> inferredChronology;
+                    SememeChronology inferredChronology = null;
                     if (inferredSememeSequences.isEmpty()) {
                         SememeBuilder builder = sememeBuilderService.getLogicalExpressionSememeBuilder(inferredExpression,
                                 idService.getConceptNid(conceptSequence),
@@ -172,12 +176,12 @@ public class ProcessClassificationResults extends TimedTask<ClassifierResults> {
                                 EditCoordinates.getClassifierSolorOverlay(),
                                 ChangeCheckerMode.INACTIVE);
                     } else {
-                        inferredChronology = (SememeChronology<LogicGraphSememe>) sememeService.getSememe(inferredSememeSequences.stream().findFirst().getAsInt());
+                        inferredChronology =  sememeService.getSememe(inferredSememeSequences.stream().findFirst().getAsInt());
                         // check to see if changed from old...
                         Optional<LatestVersion<LogicGraphSememe>> latestDefinitionOptional = inferredChronology.getLatestVersion(LogicGraphSememe.class, stampCoordinate);
                         if (latestDefinitionOptional.isPresent()) {
                             if (!latestDefinitionOptional.get().value().getLogicalExpression().equals(inferredExpression)) {
-                                MutableLogicGraphSememe newVersion = inferredChronology.createMutableVersion(MutableLogicGraphSememe.class, gov.vha.isaac.ochre.api.State.ACTIVE,
+                                MutableLogicGraphSememe newVersion = ((SememeChronology<LogicGraphSememe>)inferredChronology).createMutableVersion(MutableLogicGraphSememe.class, gov.vha.isaac.ochre.api.State.ACTIVE,
                                         EditCoordinates.getClassifierSolorOverlay());
                                 newVersion.setGraphData(inferredExpression.getData(DataTarget.INTERNAL));
                                 commitService.addUncommittedNoChecks(inferredChronology);
@@ -187,7 +191,7 @@ public class ProcessClassificationResults extends TimedTask<ClassifierResults> {
                 }
 
             } else {
-                throw new IllegalStateException("Empty latest version for stated definition. " + statedChronology);
+                throw new IllegalStateException("Empty latest version for stated definition. " + rawStatedChronology);
             }
 
         });
