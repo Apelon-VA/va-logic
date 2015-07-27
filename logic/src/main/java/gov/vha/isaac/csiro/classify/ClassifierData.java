@@ -56,7 +56,7 @@ public class ClassifierData implements ChronologyChangeListener {
     Instant lastClassifyInstant;
     ClassificationType lastClassifyType;
 
-    StampCoordinate stampCoordinate;
+    StampCoordinate<?> stampCoordinate;
     LogicCoordinate logicCoordinate;
 
     private ClassifierData(StampCoordinate stampCoordinate, LogicCoordinate logicCoordinate) {

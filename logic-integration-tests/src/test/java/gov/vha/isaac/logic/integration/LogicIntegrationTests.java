@@ -151,7 +151,7 @@ public class LogicIntegrationTests {
                 = LookupService.getService(LogicalExpressionBuilderService.class);
         LogicalExpressionBuilder defBuilder = expressionBuilderService.getLogicalExpressionBuilder();
 
-        NecessarySet(And(ConceptAssertion(Get.conceptService().getConcept(Snomed.BLEEDING_FINDING.getSequence()), defBuilder)));
+        NecessarySet(And(ConceptAssertion(Get.conceptService().getConcept(Snomed.BLEEDING_FINDING.getConceptSequence()), defBuilder)));
 
         LogicalExpression def = defBuilder.build();
         log.info("Created definition:\n\n " + def);

@@ -285,7 +285,7 @@ public class LogicProvider implements LogicService {
             ConceptNodeWithNids destinationNode,
             int stampSequence, PremiseType premiseType) {
         int destinationSequence = Get.identifierService().getConceptSequence(destinationNode.getConceptNid());
-        int typeSequence = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
+        int typeSequence = IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence();
         int group = 0;
 
         RelationshipAdaptorChronicleKeyImpl key
@@ -318,7 +318,7 @@ public class LogicProvider implements LogicService {
                 ConceptNodeWithNids restrictionNode = (ConceptNodeWithNids) someNode.getOnlyChild();
                 destinationSequence = Get.identifierService().getConceptSequence(restrictionNode.getConceptNid());
             } else {
-                destinationSequence = IsaacMetadataAuxiliaryBinding.ANONYMOUS_CONCEPT.getSequence();
+                destinationSequence = IsaacMetadataAuxiliaryBinding.ANONYMOUS_CONCEPT.getConceptSequence();
             }
             int typeSequence = Get.identifierService().getConceptSequence(someNode.getTypeConceptNid());
 
