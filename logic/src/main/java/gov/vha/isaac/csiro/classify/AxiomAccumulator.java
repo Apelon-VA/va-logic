@@ -9,8 +9,8 @@ import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import gov.vha.isaac.ochre.api.logic.Node;
 import gov.vha.isaac.ochre.model.logic.node.AndNode;
-import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
-import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
+import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithSequences;
+import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithSequences;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.apache.mahout.math.set.OpenIntHashSet;
 
@@ -56,11 +56,11 @@ public class AxiomAccumulator implements BiConsumer<Set<Axiom>, LogicalExpressio
             for (Node child : andNode.getChildren()) {
                 switch (child.getNodeSemantic()) {
                     case CONCEPT:
-                        ConceptNodeWithNids conceptNode = (ConceptNodeWithNids) child;
-                        definition.add(concepts[conceptNode.getConceptNid()]);
+                        ConceptNodeWithSequences conceptNode = (ConceptNodeWithSequences) child;
+                        definition.add(concepts[conceptNode.getConceptSequence()]);
                         break;
                     case ROLE_SOME:
-                        RoleNodeSomeWithNids roleNodeSome = (RoleNodeSomeWithNids) child;
+                        RoleNodeSomeWithSequences roleNodeSome = (RoleNodeSomeWithSequences) child;
                         definition.add(processRole(roleNodeSome, concepts, roles,
                                 neverGroupRoleSequences, roleGroupConceptSequence));
                         break;
@@ -106,12 +106,12 @@ public class AxiomAccumulator implements BiConsumer<Set<Axiom>, LogicalExpressio
                                OpenIntHashSet neverGroupRoleSequences, int roleGroupConceptSequence) {
         switch (node.getNodeSemantic()) {
             case ROLE_SOME:
-                RoleNodeSomeWithNids roleNodeSome = (RoleNodeSomeWithNids) node;
-                return Factory.createExistential(roles.get(roleNodeSome.getTypeConceptNid()),
+                RoleNodeSomeWithSequences roleNodeSome = (RoleNodeSomeWithSequences) node;
+                return Factory.createExistential(roles.get(roleNodeSome.getTypeConceptSequence()),
                         getConcept(roleNodeSome.getOnlyChild(), concepts, roles, neverGroupRoleSequences, roleGroupConceptSequence));
             case CONCEPT:
-                ConceptNodeWithNids conceptNode = (ConceptNodeWithNids) node;
-                return concepts[conceptNode.getConceptNid()];
+                ConceptNodeWithSequences conceptNode = (ConceptNodeWithSequences) node;
+                return concepts[conceptNode.getConceptSequence()];
             case AND:
                 return Factory.createConjunction(getConcepts(node.getChildren(),
                         concepts, roles, neverGroupRoleSequences, roleGroupConceptSequence));
@@ -119,11 +119,11 @@ public class AxiomAccumulator implements BiConsumer<Set<Axiom>, LogicalExpressio
         throw new UnsupportedOperationException("Can't handle " + node + " as child of ROLE_SOME.");
     }
 
-    private Concept processRole(RoleNodeSomeWithNids roleNodeSome, Concept[] concepts, OpenIntObjectHashMap<Role> roles,
+    private Concept processRole(RoleNodeSomeWithSequences roleNodeSome, Concept[] concepts, OpenIntObjectHashMap<Role> roles,
                                 OpenIntHashSet neverGroupRoleSequences, int roleGroupConceptSequence) {
         // need to handle grouped, and never grouped...
-        if (neverGroupRoleSequences.contains(roleNodeSome.getTypeConceptNid())) {
-            return Factory.createExistential(roles.get(roleNodeSome.getTypeConceptNid()),
+        if (neverGroupRoleSequences.contains(roleNodeSome.getTypeConceptSequence())) {
+            return Factory.createExistential(roles.get(roleNodeSome.getTypeConceptSequence()),
                     getConcept(roleNodeSome.getOnlyChild(), concepts, roles, neverGroupRoleSequences, roleGroupConceptSequence));
         }
         return Factory.createExistential(roles.get(roleGroupConceptSequence), getConcept(roleNodeSome,

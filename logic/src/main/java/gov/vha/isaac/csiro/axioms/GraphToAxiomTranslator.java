@@ -19,15 +19,15 @@ import au.csiro.ontology.model.Operator;
 import au.csiro.ontology.model.Role;
 import gov.vha.isaac.ochre.api.logic.Node;
 import gov.vha.isaac.ochre.model.logic.node.AndNode;
-import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
-import gov.vha.isaac.ochre.model.logic.node.internal.FeatureNodeWithNids;
+import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithSequences;
+import gov.vha.isaac.ochre.model.logic.node.internal.FeatureNodeWithSequences;
 import gov.vha.isaac.ochre.model.logic.node.LiteralNodeBoolean;
 import gov.vha.isaac.ochre.model.logic.node.LiteralNodeFloat;
 import gov.vha.isaac.ochre.model.logic.node.LiteralNodeInstant;
 import gov.vha.isaac.ochre.model.logic.node.LiteralNodeInteger;
 import gov.vha.isaac.ochre.model.logic.node.LiteralNodeString;
 import gov.vha.isaac.ochre.model.logic.node.NecessarySetNode;
-import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
+import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithSequences;
 import gov.vha.isaac.ochre.model.logic.node.RootNode;
 import gov.vha.isaac.ochre.model.logic.node.SufficientSetNode;
 import gov.vha.isaac.ochre.api.DataSource;
@@ -143,15 +143,15 @@ public class GraphToAxiomTranslator {
             case AND:
                 return processAnd((AndNode) node, conceptNid, logicGraph);
             case CONCEPT:
-                ConceptNodeWithNids conceptNode = (ConceptNodeWithNids) node;
-                return Optional.of(getConcept(conceptNode.getConceptNid()));
+                ConceptNodeWithSequences conceptNode = (ConceptNodeWithSequences) node;
+                return Optional.of(getConcept(conceptNode.getConceptSequence()));
             case DEFINITION_ROOT:
                 processRoot(node, conceptNid, logicGraph);
                 break;
             case DISJOINT_WITH:
                 throw new UnsupportedOperationException("Not supported by SnoRocket/EL++.");
             case FEATURE:
-                return processFeatureNode((FeatureNodeWithNids) node, conceptNid, logicGraph);
+                return processFeatureNode((FeatureNodeWithSequences) node, conceptNid, logicGraph);
             case NECESSARY_SET:
                 processNecessarySet((NecessarySetNode) node, conceptNid, logicGraph);
                 break;
@@ -160,7 +160,7 @@ public class GraphToAxiomTranslator {
             case ROLE_ALL:
                 throw new UnsupportedOperationException("Not supported by SnoRocket/EL++.");
             case ROLE_SOME:
-                return processRoleNodeSome((RoleNodeSomeWithNids) node, conceptNid, logicGraph);
+                return processRoleNodeSome((RoleNodeSomeWithSequences) node, conceptNid, logicGraph);
             case SUBSTITUTION_BOOLEAN:
                 throw new UnsupportedOperationException("Supported, but not yet implemented.");
             case SUBSTITUTION_CONCEPT:
@@ -243,8 +243,8 @@ public class GraphToAxiomTranslator {
         }
     }
 
-    private Optional<Concept> processRoleNodeSome(RoleNodeSomeWithNids roleNodeSome, int conceptNid, LogicalExpressionOchreImpl logicGraph) {
-        Role theRole = getRole(roleNodeSome.getTypeConceptNid());
+    private Optional<Concept> processRoleNodeSome(RoleNodeSomeWithSequences roleNodeSome, int conceptNid, LogicalExpressionOchreImpl logicGraph) {
+        Role theRole = getRole(roleNodeSome.getTypeConceptSequence());
         Node[] children = roleNodeSome.getChildren();
         if (children.length != 1) {
             throw new IllegalStateException("RoleNodeSome can only have one child. Concept: " + conceptNid + " graph: " + logicGraph);
@@ -264,8 +264,8 @@ public class GraphToAxiomTranslator {
         return sequenceLogicConceptMap.get(sequence);
     }
 
-    private Optional<Concept> processFeatureNode(FeatureNodeWithNids featureNode, int conceptNid, LogicalExpressionOchreImpl logicGraph) {
-        Feature theFeature = getFeature(featureNode.getTypeConceptNid());
+    private Optional<Concept> processFeatureNode(FeatureNodeWithSequences featureNode, int conceptNid, LogicalExpressionOchreImpl logicGraph) {
+        Feature theFeature = getFeature(featureNode.getTypeConceptSequence());
         Node[] children = featureNode.getChildren();
         if (children.length != 1) {
             throw new IllegalStateException("FeatureNode can only have one child. Concept: " + conceptNid + " graph: " + logicGraph);

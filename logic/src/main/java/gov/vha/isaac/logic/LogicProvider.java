@@ -39,8 +39,8 @@ import gov.vha.isaac.ochre.api.relationship.RelationshipAdaptorChronicleKey;
 import gov.vha.isaac.ochre.api.relationship.RelationshipVersionAdaptor;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import gov.vha.isaac.ochre.model.logic.node.AndNode;
-import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
-import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
+import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithSequences;
+import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithSequences;
 import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronicleKeyImpl;
 import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronologyImpl;
 import gov.vha.isaac.ochre.model.relationship.RelationshipVersionAdaptorImpl;
@@ -256,16 +256,15 @@ public class LogicProvider implements LogicService {
                                 -> andOrOrNode.getChildStream().forEach((Node aNode) -> {
                             switch (aNode.getNodeSemantic()) {
                                 case CONCEPT:
-                                    streamBuilder.accept(
-                                            createIsaRel(originConceptSequence,
-                                                    (ConceptNodeWithNids) aNode,
+                                    streamBuilder.accept(createIsaRel(originConceptSequence,
+                                                    (ConceptNodeWithSequences) aNode,
                                                     logicVersion.getStampSequence(),
                                                     premiseType));
                                     break;
                                 case ROLE_SOME:
 
                                     createSomeRole(originConceptSequence,
-                                            (RoleNodeSomeWithNids) aNode,
+                                            (RoleNodeSomeWithSequences) aNode,
                                             logicVersion.getStampSequence(),
                                             premiseType, 0).forEach((someRelAdaptor) -> {
                                         streamBuilder.accept(someRelAdaptor);
@@ -282,9 +281,9 @@ public class LogicProvider implements LogicService {
     }
 
     private RelationshipVersionAdaptorImpl createIsaRel(int originSequence,
-            ConceptNodeWithNids destinationNode,
+            ConceptNodeWithSequences destinationNode,
             int stampSequence, PremiseType premiseType) {
-        int destinationSequence = Get.identifierService().getConceptSequence(destinationNode.getConceptNid());
+        int destinationSequence = Get.identifierService().getConceptSequence(destinationNode.getConceptSequence());
         int typeSequence = IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence();
         int group = 0;
 
@@ -296,15 +295,15 @@ public class LogicProvider implements LogicService {
     }
 
     private Stream<RelationshipVersionAdaptorImpl> createSomeRole(int originSequence,
-            RoleNodeSomeWithNids someNode,
+            RoleNodeSomeWithSequences someNode,
             int stampSequence, PremiseType premiseType, int roleGroup) {
 
         Stream.Builder<RelationshipVersionAdaptorImpl> roleStream = Stream.builder();
 
-        if (someNode.getTypeConceptNid() == IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getNid()) {
+        if (someNode.getTypeConceptSequence() == IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getConceptSequence()) {
             AndNode andNode = (AndNode) someNode.getOnlyChild();
             andNode.getChildStream().forEach((roleGroupSomeNode) -> {
-                createSomeRole(originSequence, (RoleNodeSomeWithNids) roleGroupSomeNode,
+                createSomeRole(originSequence, (RoleNodeSomeWithSequences) roleGroupSomeNode,
                         stampSequence, premiseType, someNode.getNodeIndex())
                         .forEach((adaptor) -> {
                             roleStream.add(adaptor);
@@ -315,12 +314,12 @@ public class LogicProvider implements LogicService {
             Node restriction = someNode.getOnlyChild();
             int destinationSequence;
             if (restriction.getNodeSemantic() == NodeSemantic.CONCEPT) {
-                ConceptNodeWithNids restrictionNode = (ConceptNodeWithNids) someNode.getOnlyChild();
-                destinationSequence = Get.identifierService().getConceptSequence(restrictionNode.getConceptNid());
+                ConceptNodeWithSequences restrictionNode = (ConceptNodeWithSequences) someNode.getOnlyChild();
+                destinationSequence = Get.identifierService().getConceptSequence(restrictionNode.getConceptSequence());
             } else {
                 destinationSequence = IsaacMetadataAuxiliaryBinding.ANONYMOUS_CONCEPT.getConceptSequence();
             }
-            int typeSequence = Get.identifierService().getConceptSequence(someNode.getTypeConceptNid());
+            int typeSequence = Get.identifierService().getConceptSequence(someNode.getTypeConceptSequence());
 
             RelationshipAdaptorChronicleKeyImpl key
                     = new RelationshipAdaptorChronicleKeyImpl(originSequence,
