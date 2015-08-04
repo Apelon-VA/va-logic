@@ -17,7 +17,6 @@ import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
@@ -116,6 +115,9 @@ public class LogicIntegrationTests {
         if (!dbExists) {
             loadDatabase();
         }
+
+                
+        testHealthConcept();
 
         LogicService logicService = LookupService.getService(LogicService.class);
         LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
@@ -299,4 +301,33 @@ public class LogicIntegrationTests {
             }
         }
     }    
+    
+    
+    private void testHealthConcept() {
+        ConceptChronology healthConcept = Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT.getPrimodialUuid());
+        List<? extends SememeChronology<? extends RelationshipVersionAdaptor<?>>> originRels = healthConcept.getRelationshipListOriginatingFromConcept();
+        Get.taxonomyService().getAllRelationshipDestinationSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
+                .getConceptSequence()).forEach((parentSequence) -> {log.info("Parent: " + Get.conceptDescriptionText(parentSequence));});
+        
+         log.info("Origin relationships:\n" + formatLinePerListElement(originRels));
+         
+        Get.taxonomyService().getAllRelationshipOriginSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
+                .getConceptSequence()).forEach((childSequence) -> {log.info("Child: " + Get.conceptDescriptionText(childSequence));});
+        List<? extends SememeChronology<? extends RelationshipVersionAdaptor<?>>> destinationRels = healthConcept.getRelationshipListWithConceptAsDestination();
+         log.info("Destination relationships:\n" + formatLinePerListElement(destinationRels));
+    }
+    
+    String formatLinePerListElement(List<?> list) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+                list.stream().forEach((element) -> {
+            sb.append(element);
+            sb.append(",\n ");
+        });
+        sb.delete(sb.length() - 4, sb.length() -1);
+        
+        sb.append("]");
+        return sb.toString();
+    }
+
 }
