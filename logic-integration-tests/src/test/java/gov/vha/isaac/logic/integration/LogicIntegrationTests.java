@@ -17,6 +17,7 @@ import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
@@ -305,14 +306,24 @@ public class LogicIntegrationTests {
     
     private void testHealthConcept() {
         ConceptChronology healthConcept = Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT.getPrimodialUuid());
-        List<? extends SememeChronology<? extends RelationshipVersionAdaptor<?>>> originRels = healthConcept.getRelationshipListOriginatingFromConcept();
-        Get.taxonomyService().getAllRelationshipDestinationSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
+        Get.taxonomyService().getTaxonomyParentSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
                 .getConceptSequence()).forEach((parentSequence) -> {log.info("Parent: " + Get.conceptDescriptionText(parentSequence));});
+
+         Get.taxonomyService().getTaxonomyParentSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
+                .getConceptSequence(), Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate()).forEach((parentSequence) -> {log.info("Parent with tc: " + Get.conceptDescriptionText(parentSequence));});
+
+        List<? extends SememeChronology<? extends RelationshipVersionAdaptor<?>>> originRels = healthConcept.getRelationshipListOriginatingFromConcept();
         
          log.info("Origin relationships:\n" + formatLinePerListElement(originRels));
          
-        Get.taxonomyService().getAllRelationshipOriginSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
+        Get.taxonomyService().getTaxonomyChildSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
                 .getConceptSequence()).forEach((childSequence) -> {log.info("Child: " + Get.conceptDescriptionText(childSequence));});
+        Get.taxonomyService().getTaxonomyChildSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
+                .getConceptSequence(), Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate()).forEach((childSequence) -> {
+                    log.info("Child with tc:" + Get.conceptDescriptionText(childSequence) + "<" + childSequence + ">");});
+        Get.taxonomyService().getTaxonomyChildSequences(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT
+                .getConceptSequence(), Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate().makeAnalog(State.ACTIVE)).forEach((childSequence) -> {
+                    log.info("Child with tc2:" + Get.conceptDescriptionText(childSequence) + "<" + childSequence + ">");});
         List<? extends SememeChronology<? extends RelationshipVersionAdaptor<?>>> destinationRels = healthConcept.getRelationshipListWithConceptAsDestination();
          log.info("Destination relationships:\n" + formatLinePerListElement(destinationRels));
     }
