@@ -117,7 +117,8 @@ public class LogicIntegrationTests {
             loadDatabase();
         }
 
-                
+         validateRelationshipAdaptors();
+      
         testHealthConcept();
 
         LogicService logicService = LookupService.getService(LogicService.class);
@@ -175,7 +176,6 @@ public class LogicIntegrationTests {
         classifyTask = classifier.classify();
         results = classifyTask.get();
         log.info(results);
-        validateRelationshipAdaptors();
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
     }

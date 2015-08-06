@@ -32,6 +32,9 @@ import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.dag.DagNode;
+import gov.vha.isaac.ochre.api.dag.Graph;
+import gov.vha.isaac.ochre.api.logic.IsomorphicResults;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.Node;
 import gov.vha.isaac.ochre.api.logic.NodeSemantic;
@@ -237,47 +240,87 @@ public class LogicProvider implements LogicService {
                     }
                 });
     }
+    
+    private void processNode(DagNode<? extends LogicGraphSememe<?>> node, 
+           LogicalExpression previousExpression,
+            Stream.Builder<RelationshipVersionAdaptorImpl> streamBuilder, PremiseType premiseType) {
+        
+        LogicalExpression newExpression = node.getData().getLogicalExpression();
+        int stampSequence = node.getData().getStampSequence();
+        int inactiveStampSequence = Get.commitService().getRetiredStampSequence(stampSequence);
+        if (previousExpression == null) {
+            processRootExpression(newExpression, streamBuilder, stampSequence, premiseType);
+        } else {
+            IsomorphicResults comparison = newExpression.findIsomorphisms(previousExpression);
+            comparison.getAddedRelationshipRoots().forEach((addedRelRoot) -> 
+                    processRelNode(addedRelRoot, streamBuilder, newExpression, stampSequence, premiseType));
+            comparison.getDeletedRelationshipRoots().forEach((addedRelRoot) -> 
+                    processRelNode(addedRelRoot, streamBuilder, newExpression, inactiveStampSequence, premiseType));
+        }
+        for (DagNode<? extends LogicGraphSememe<?>> child: node.getChildren()) {
+            processNode(child, newExpression, streamBuilder, premiseType);
+        }
+    }
 
+    
     private Stream<RelationshipVersionAdaptorImpl> extractRelationshipAdaptors(
             SememeChronology<LogicGraphSememe<?>> logicGraphChronology,
             PremiseType premiseType) {
 
         Stream.Builder<RelationshipVersionAdaptorImpl> streamBuilder = Stream.builder();
+        
+        // one graph for each origin... Usually only one. 
+         
+        for (Graph<? extends LogicGraphSememe<?>> versionGraph: logicGraphChronology.getVersionGraphList()) {
+            DagNode<? extends LogicGraphSememe<?>> node = versionGraph.getRoot();
+            processNode(node, null, streamBuilder, premiseType);
+        }
+        
         int originConceptSequence = Get.identifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid());
         logicGraphChronology.getVersionList().forEach((logicVersion) -> {
             LogicalExpressionOchreImpl expression
                     = new LogicalExpressionOchreImpl(logicVersion.getGraphData(),
                             DataSource.INTERNAL,
                             originConceptSequence);
-
-            expression.getRoot()
-                    .getChildStream().forEach((necessaryOrSufficientSet) -> {
-                        necessaryOrSufficientSet.getChildStream().forEach((Node andOrOrNode)
-                                -> andOrOrNode.getChildStream().forEach((Node aNode) -> {
-                            switch (aNode.getNodeSemantic()) {
-                                case CONCEPT:
-                                    streamBuilder.accept(createIsaRel(originConceptSequence,
-                                                    (ConceptNodeWithSequences) aNode,
-                                                    logicVersion.getStampSequence(),
-                                                    premiseType));
-                                    break;
-                                case ROLE_SOME:
-
-                                    createSomeRole(originConceptSequence,
-                                            (RoleNodeSomeWithSequences) aNode,
-                                            logicVersion.getStampSequence(),
-                                            premiseType, 0).forEach((someRelAdaptor) -> {
-                                        streamBuilder.accept(someRelAdaptor);
-                                    });
-                                    break;
-                                default:
-                                    throw new UnsupportedOperationException("Can't handle: " + aNode.getNodeSemantic());
-                            }
-                        }));
-                    });
         });
 
         return streamBuilder.build();
+    }
+
+    private void processRootExpression(LogicalExpression expression, 
+            Stream.Builder<RelationshipVersionAdaptorImpl> streamBuilder, 
+            int stampSequence, 
+            PremiseType premiseType) {
+        expression.getRoot()
+                .getChildStream().forEach((necessaryOrSufficientSet) -> {
+                    necessaryOrSufficientSet.getChildStream().forEach((Node andOrOrNode)
+                            -> andOrOrNode.getChildStream().forEach((Node aNode) -> {
+                processRelNode(aNode, streamBuilder, expression, stampSequence, premiseType);
+                            }));
+                });
+    }
+
+    private void processRelNode(Node aNode, Stream.Builder<RelationshipVersionAdaptorImpl> streamBuilder, 
+            LogicalExpression expression, int stampSequence, PremiseType premiseType) throws UnsupportedOperationException {
+        switch (aNode.getNodeSemantic()) {
+            case CONCEPT:
+                streamBuilder.accept(createIsaRel(expression.getConceptSequence(),
+                        (ConceptNodeWithSequences) aNode,
+                        stampSequence,
+                        premiseType));
+                break;
+            case ROLE_SOME:
+                
+                createSomeRole(expression.getConceptSequence(),
+                        (RoleNodeSomeWithSequences) aNode,
+                        stampSequence,
+                        premiseType, 0).forEach((someRelAdaptor) -> {
+                            streamBuilder.accept(someRelAdaptor);
+                        });
+                break;
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + aNode.getNodeSemantic());
+        }
     }
 
     private RelationshipVersionAdaptorImpl createIsaRel(int originSequence,
