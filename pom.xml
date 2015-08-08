@@ -9,7 +9,7 @@
     
     <groupId>gov.vha.isaac.logic</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.15-SNAPSHOT</version>
+    <version>1.15</version>
     <name>${project.artifactId}: (MMP)</name>
     <packaging>pom</packaging>
     
