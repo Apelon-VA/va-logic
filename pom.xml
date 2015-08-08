@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.8-SNAPSHOT</version>
+        <version>1.8</version>
     </parent>
     
     <groupId>gov.vha.isaac.logic</groupId>
@@ -18,9 +18,9 @@
     </scm>
     
     <properties>
-        <ochre.version>2.30-SNAPSHOT</ochre.version>
-        <isaac-metadata.version>1.32-SNAPSHOT</isaac-metadata.version>
-        <newtons-cradle.version>1.20-SNAPSHOT</newtons-cradle.version>
+        <ochre.version>2.30</ochre.version>
+        <isaac-metadata.version>1.32</isaac-metadata.version>
+        <newtons-cradle.version>1.20</newtons-cradle.version>
         <snorocket-core.version>2.5.7</snorocket-core.version>
     </properties>
     
