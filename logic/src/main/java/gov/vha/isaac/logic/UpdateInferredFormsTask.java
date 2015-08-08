@@ -16,13 +16,11 @@
 package gov.vha.isaac.logic;
 
 import au.csiro.ontology.Ontology;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
@@ -36,34 +34,6 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
  * @author kec
  */
 public class UpdateInferredFormsTask extends Task<Integer> {
-
-    private static ConceptService conceptService;
-    private static TaxonomyService taxonomyService;
-    private static SememeService sememeService;
-
-    private static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
-
-    /**
-     * @return the taxonomyService
-     */
-    public static TaxonomyService getTaxonomyService() {
-        if (taxonomyService == null) {
-            taxonomyService = LookupService.getService(TaxonomyService.class);
-        }
-        return taxonomyService;
-    }
-
-    public static SememeService getSememeService() {
-        if (sememeService == null) {
-            sememeService = LookupService.getService(SememeService.class);
-        }
-        return sememeService;
-    }
 
     ClassifierResults classifierResults;
     Ontology classifiedModel;
@@ -99,12 +69,12 @@ public class UpdateInferredFormsTask extends Task<Integer> {
     protected Integer call() throws Exception {
         try {
             SememeSnapshotService<LogicGraphSememe> sememeSnapshot = 
-                    getSememeService().getSnapshot(LogicGraphSememe.class, stampCoordinate);
+                    Get.sememeService().getSnapshot(LogicGraphSememe.class, stampCoordinate);
             
             classifierResults.getAffectedConcepts().stream().parallel().forEach((conceptSequence) -> {
                 if (processedCount.incrementAndGet() % 10 == 0) {
                     updateProgress(processedCount.get(), conceptsToProcess);
-                    ConceptChronology concept = getConceptService().getConcept(conceptSequence);
+                    ConceptChronology concept = Get.conceptService().getConcept(conceptSequence);
                     updateMessage("Updating concept: " + concept.toUserString());
                     updateValue(processedCount.get());
                     
