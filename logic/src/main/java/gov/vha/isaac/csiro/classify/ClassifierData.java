@@ -56,15 +56,15 @@ public class ClassifierData implements ChronologyChangeListener {
     Instant lastClassifyInstant;
     ClassificationType lastClassifyType;
 
-    StampCoordinate<? extends StampCoordinate<?>> stampCoordinate;
+    StampCoordinate stampCoordinate;
     LogicCoordinate logicCoordinate;
 
-    private ClassifierData(StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, LogicCoordinate logicCoordinate) {
+    private ClassifierData(StampCoordinate stampCoordinate, LogicCoordinate logicCoordinate) {
         this.stampCoordinate = stampCoordinate;
         this.logicCoordinate = logicCoordinate;
     }
 
-    public static ClassifierData get(StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, LogicCoordinate logicCoordinate) {
+    public static ClassifierData get(StampCoordinate stampCoordinate, LogicCoordinate logicCoordinate) {
         if (singletonReference.get() == null) {
             singletonReference.compareAndSet(null, new ClassifierData(stampCoordinate, logicCoordinate));
         } else {

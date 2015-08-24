@@ -18,6 +18,8 @@ package gov.vha.isaac.csiro.classify;
 import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.csiro.classify.tasks.AggregateClassifyTask;
+import gov.vha.isaac.metadata.coordinates.StampCoordinates;
+import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.classifier.ClassifierResults;
@@ -25,6 +27,7 @@ import gov.vha.isaac.ochre.api.classifier.ClassifierService;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
@@ -60,25 +63,23 @@ public class ClassifierProvider implements ClassifierService {
     }
 
     protected HashTreeWithBitSets getStatedTaxonomyGraph() {
-        try {
-            IntStream conceptSequenceStream = Get.identifierService().getParallelConceptSequenceStream();
-            GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) Get.taxonomyService()).getOriginDestinationTaxonomyRecords(),
-                    ViewCoordinates.getDevelopmentStatedLatestActiveOnly());
-            HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
-                    HashTreeBuilder::new,
-                    collector,
-                    collector);
-            HashTreeWithBitSets resultGraph = graphBuilder.getSimpleDirectedGraphGraph();
-            return resultGraph;
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        IntStream conceptSequenceStream = Get.identifierService().getParallelConceptSequenceStream();
+        GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) Get.taxonomyService()).getOriginDestinationTaxonomyRecords(),
+                TaxonomyCoordinates.getStatedTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+                Get.configurationService().getDefaultLanguageCoordinate()));
+        HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
+                HashTreeBuilder::new,
+                collector,
+                collector);
+        HashTreeWithBitSets resultGraph = graphBuilder.getSimpleDirectedGraphGraph();
+        return resultGraph;
     }
 
     protected HashTreeWithBitSets getInferredTaxonomyGraph() {
         IntStream conceptSequenceStream = Get.identifierService().getParallelConceptSequenceStream();
         GraphCollector collector = new GraphCollector(((CradleTaxonomyProvider) Get.taxonomyService()).getOriginDestinationTaxonomyRecords(),
-                ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
+                TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+                Get.configurationService().getDefaultLanguageCoordinate()));
         HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
                 HashTreeBuilder::new,
                 collector,

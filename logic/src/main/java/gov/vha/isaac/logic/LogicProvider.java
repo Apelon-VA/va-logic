@@ -94,7 +94,7 @@ public class LogicProvider implements LogicService {
 
     @Override
     public ClassifierService getClassifierService(
-            StampCoordinate<? extends StampCoordinate<?>> stampCoordinate,
+            StampCoordinate stampCoordinate,
             LogicCoordinate logicCoordinate,
             EditCoordinate editCoordinate) {
         ClassifierServiceKey key = new ClassifierServiceKey(stampCoordinate, logicCoordinate, editCoordinate);
@@ -107,11 +107,11 @@ public class LogicProvider implements LogicService {
 
     private static class ClassifierServiceKey {
 
-        StampCoordinate<? extends StampCoordinate<?>> stampCoordinate;
+        StampCoordinate stampCoordinate;
         LogicCoordinate logicCoordinate;
         EditCoordinate editCoordinate;
 
-        public ClassifierServiceKey(StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, LogicCoordinate logicCoordinate, EditCoordinate editCoordinate) {
+        public ClassifierServiceKey(StampCoordinate stampCoordinate, LogicCoordinate logicCoordinate, EditCoordinate editCoordinate) {
             this.stampCoordinate = stampCoordinate;
             this.logicCoordinate = logicCoordinate;
             this.editCoordinate = editCoordinate;
@@ -374,7 +374,7 @@ public class LogicProvider implements LogicService {
 
     @Override
     public Optional<LatestVersion<? extends LogicalExpression>> getLogicalExpression(int conceptId, int logicAssemblageId,
-            StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
+            StampCoordinate stampCoordinate) {
         SememeSnapshotService<LogicGraphSememeImpl> ssp
                 = Get.sememeService().getSnapshot(LogicGraphSememeImpl.class, stampCoordinate);
 
