@@ -215,7 +215,7 @@ public class LogicIntegrationTests {
     private void loadDatabase() throws ExecutionException, IOException, MultiException, InterruptedException {
         ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
 
-        Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
+        Path snomedDataFile = Paths.get("target/data/SnomedCoreEConcepts.jbin");
         Path logicMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
 
