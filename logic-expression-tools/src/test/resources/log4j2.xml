@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %-5p [%t] %C{2} (%F:%L) - %m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="gov.vha.isaac.cradle.sequence.SequenceService" level="info"/>
+        <Logger name="gov.vha.isaac.cradle.tasks.LoadEConceptFile" level="info"/>
+        <Logger name="gov.vha.isaac.cradle.Cradle" level="info"/>
+        <Logger name="gov.vha.isaac.cradle.taxonomy.TaxonomyService" level="info"/>
+        <Logger name="gov.va.oia.HK2Utilities" level="info"/>
+        <Logger name="org.jvnet.hk2.logger" level="OFF"/>  <!-- HK2 is logging a debug message that is being mis-translated into an error by LOG4J2 https://issues.apache.org/jira/browse/LOG4J2-1003 -->
+        <Root level="debug">
+            <AppenderRef ref="STDOUT"/>
+        </Root>
+    </Loggers>
+</Configuration>

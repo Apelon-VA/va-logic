@@ -24,6 +24,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>logic-expression-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
             <artifactId>isaac-metadata-coordinates</artifactId>
         </dependency>
