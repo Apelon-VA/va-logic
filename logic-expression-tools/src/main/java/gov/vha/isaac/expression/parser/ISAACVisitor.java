@@ -161,7 +161,7 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 			role = SomeRole(property, result);
 			} 
 			else {
-				logger.info("Shouldn't ever get here");
+				logger.warn("Shouldn't ever get here");
 			}
 		}
 		return role;
