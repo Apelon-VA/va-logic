@@ -80,7 +80,7 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 
 	@Override
 	public Object visitExpression(ExpressionContext ctx) {
-		logger.info("visitExpression: " + ctx.getText());
+		logger.debug("visitExpression: " + ctx.getText());
 		Object subExpression = visit(ctx.subExpression());
 		if ((ctx.definitionStatus() == null && defaultToPrimitive_ == true)
 				|| ((ctx.definitionStatus() != null && ctx.definitionStatus().start.getType() == SNOMEDCTExpressionLexer.SC_OF)))
@@ -94,14 +94,14 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 
 	@Override
 	public Object visitRefinement(RefinementContext ctx) {
-		logger.info("visitRefinement: " + ctx.getText());
+		logger.debug("visitRefinement: " + ctx.getText());
 		
 		return visit(ctx.nonGroupedAttributeSet());
 	}
 
 	@Override
 	public Object visitSubExpression(SubExpressionContext ctx) {
-		logger.info("visitSubExpression: " + ctx.getText());
+		logger.debug("visitSubExpression: " + ctx.getText());
 		
 		Object result;
 
@@ -120,7 +120,7 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 
 	@Override
 	public Object visitFocusConcept(FocusConceptContext ctx) {
-		logger.info("visitFocusConcept: " + ctx.getText());
+		logger.debug("visitFocusConcept: " + ctx.getText());
 
 		if (ctx.getChildCount() > 1) {
 			throw new RuntimeException("LOINC EXPRESSION SERVICE> Cannot (yet) handle conjoined focus concept");
@@ -131,7 +131,7 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 
 	@Override
 	public Object visitConceptReference(ConceptReferenceContext ctx) {
-		logger.info("visitConceptReference: " + ctx.getText());
+		logger.debug("visitConceptReference: " + ctx.getText());
 
 		Optional<Integer> nid = Frills.getNidForSCTID(Long.parseLong(ctx.getText()));
 		if (! nid.isPresent()) {
@@ -143,7 +143,7 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 	@Override
 	public Object visitAttribute(
 			se.liu.imt.mi.snomedct.expression.SNOMEDCTExpressionParser.AttributeContext ctx) {
-		logger.info("visitAttribute: " + ctx.getText());
+		logger.debug("visitAttribute: " + ctx.getText());
 		
 		SomeRole role = null;
 		
@@ -169,14 +169,14 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 
 	@Override
 	public Object visitAttributeGroup(AttributeGroupContext ctx) {
-		logger.info("visitAttributeGroup: " + ctx.getText());
+		logger.debug("visitAttributeGroup: " + ctx.getText());
 		
 		throw new RuntimeException("LOINC EXPRESSION SERVICE> Cannot (yet) handle attribute group");
 	}
 
 	@Override
 	public Object visitAttributeSet(AttributeSetContext ctx) {
-		logger.info("visitAttributeSet: " + ctx.getText());
+		logger.debug("visitAttributeSet: " + ctx.getText());
 		
 		throw new RuntimeException("LOINC EXPRESSION SERVICE> Cannot (yet) handle attribute set");
 	}
@@ -184,7 +184,7 @@ public class ISAACVisitor extends SNOMEDCTExpressionBaseVisitor<Object> {
 	//TODO: see more complex processing in OWLVisitor
 	@Override
 	public Object visitNonGroupedAttributeSet(NonGroupedAttributeSetContext ctx) {
-		logger.info("visitNonGroupedAttributeSet: " + ctx.getText());
+		logger.debug("visitNonGroupedAttributeSet: " + ctx.getText());
 
 		int childCount = ctx.getChildCount();
 		Assertion[] assertions = new Assertion[(childCount+1) / 2];
