@@ -60,6 +60,7 @@ import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.relationship.RelationshipVersionAdaptor;
+import gov.vha.isaac.ochre.model.coordinate.EditCoordinateImpl;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
 import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronologyImpl;
 import gov.vha.isaac.ochre.util.UuidT3Generator;
@@ -190,16 +191,50 @@ public class LogicIntegrationTests {
         for (Object component : createdComponents) {
             component.toString();
         }
+        
+        int altPathConceptNid = addConceptAltPath();
 
         Get.commitService().commit("Commit for logic integration incremental classification test. ").get();
 
         classifyTask = classifier.classify();
         results = classifyTask.get();
         log.info(results);
+        
+        lg1 = logicService.getLogicalExpression(altPathConceptNid, logicCoordinate.getStatedAssemblageSequence(), stampCoordinate);
+        System.out.println("Stated logic graph (alt path):  " + lg1);
+        lg2 = logicService.getLogicalExpression(altPathConceptNid, logicCoordinate.getInferredAssemblageSequence(), stampCoordinate);
+        System.out.println("Inferred logic graph (alt path):  " + lg2);
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
         
         testExpressions();
+    }
+    
+    private int addConceptAltPath()
+    {
+        ConceptBuilderService conceptBuilderService = LookupService.getService(ConceptBuilderService.class);
+        conceptBuilderService.setDefaultLanguageForDescriptions(IsaacMetadataAuxiliaryBinding.ENGLISH);
+        conceptBuilderService.setDefaultDialectAssemblageForDescriptions(IsaacMetadataAuxiliaryBinding.US_ENGLISH_DIALECT);
+        conceptBuilderService.setDefaultLogicCoordinate(LogicCoordinates.getStandardElProfile());
+
+        LogicalExpressionBuilderService expressionBuilderService = LookupService.getService(LogicalExpressionBuilderService.class);
+        LogicalExpressionBuilder defBuilder = expressionBuilderService.getLogicalExpressionBuilder();
+
+        NecessarySet(And(ConceptAssertion(Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getConceptSequence()), defBuilder)));
+
+        LogicalExpression def = defBuilder.build();
+        log.info("Created definition:\n\n " + def);
+
+        ConceptBuilder builder = conceptBuilderService.getDefaultConceptBuilder("silly test", "a really silly test", def);
+
+        List createdComponents = new ArrayList();
+        
+        EditCoordinate ec = new EditCoordinateImpl(Get.identifierService().getNidForUuids(IsaacMetadataAuxiliaryBinding.USER.getPrimodialUuid()), 
+                Get.identifierService().getNidForUuids(IsaacMetadataAuxiliaryBinding.LOINC.getPrimodialUuid()),
+                Get.identifierService().getNidForUuids(IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getPrimodialUuid()));
+        
+        ConceptChronology concept = builder.build(ec, ChangeCheckerMode.ACTIVE, createdComponents);
+        return concept.getNid();
     }
 
     private void exportDatabase() throws InterruptedException, ExecutionException {
