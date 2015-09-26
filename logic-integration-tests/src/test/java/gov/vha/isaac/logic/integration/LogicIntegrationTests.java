@@ -1,12 +1,29 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright Notice
+ *
+ * This is a work of the U.S. Government and is not subject to copyright
+ * protection in the United States. Foreign copyrights may apply.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package gov.vha.isaac.logic.integration;
 
-import gov.vha.isaac.ochre.api.logic.LogicService;
-import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.ochre.api.constants.Constants.DATA_STORE_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.And;
+import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.ConceptAssertion;
+import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.NecessarySet;
+import gov.vha.isaac.expression.parser.ExpressionReader;
+import gov.vha.isaac.expression.parser.ISAACVisitor;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
@@ -18,7 +35,6 @@ import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.State;
-import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
@@ -27,39 +43,44 @@ import gov.vha.isaac.ochre.api.classifier.ClassifierService;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
+import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.logic.LogicService;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
-import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
+import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
+import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
+import gov.vha.isaac.ochre.api.relationship.RelationshipVersionAdaptor;
+import gov.vha.isaac.ochre.model.coordinate.EditCoordinateImpl;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronologyImpl;
+import gov.vha.isaac.ochre.util.UuidT3Generator;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.ExecutionException;
-import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
-import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
-import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
-import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
-import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
-import gov.vha.isaac.ochre.api.coordinate.PremiseType;
-import gov.vha.isaac.ochre.api.relationship.RelationshipVersionAdaptor;
-import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
-import gov.vha.isaac.ochre.model.relationship.RelationshipAdaptorChronologyImpl;
-import gov.vha.isaac.ochre.util.UuidT3Generator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.MultiException;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
+import org.ihtsdo.otf.query.lucene.indexers.SememeIndexer;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
@@ -83,9 +104,9 @@ public class LogicIntegrationTests {
     @BeforeSuite
     public void setUpSuite() throws Exception {
         log.info("oneTimeSetUp");
-        System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
+        System.setProperty(DATA_STORE_ROOT_LOCATION_PROPERTY, "target/ochre.data");
 
-        java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
+        java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(DATA_STORE_ROOT_LOCATION_PROPERTY));
         dbExists = dbFolderPath.toFile().exists();
         System.out.println("termstore folder path: " + dbFolderPath.toFile().exists());
         LookupService.getService(ConfigurationService.class).setConceptModel(ConceptModel.OCHRE_CONCEPT_MODEL);
@@ -108,9 +129,9 @@ public class LogicIntegrationTests {
     public void testLoad() throws Exception {
 
         log.info("  Testing load...");
-        String mapDbFolder = System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY);
+        String mapDbFolder = System.getProperty(DATA_STORE_ROOT_LOCATION_PROPERTY);
         if (mapDbFolder == null || mapDbFolder.isEmpty()) {
-            throw new IllegalStateException(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY + " has not been set.");
+            throw new IllegalStateException(DATA_STORE_ROOT_LOCATION_PROPERTY + " has not been set.");
         }
 
         if (!dbExists) {
@@ -170,14 +191,50 @@ public class LogicIntegrationTests {
         for (Object component : createdComponents) {
             component.toString();
         }
+        
+        int altPathConceptNid = addConceptAltPath();
 
         Get.commitService().commit("Commit for logic integration incremental classification test. ").get();
 
         classifyTask = classifier.classify();
         results = classifyTask.get();
         log.info(results);
+        
+        lg1 = logicService.getLogicalExpression(altPathConceptNid, logicCoordinate.getStatedAssemblageSequence(), stampCoordinate);
+        System.out.println("Stated logic graph (alt path):  " + lg1);
+        lg2 = logicService.getLogicalExpression(altPathConceptNid, logicCoordinate.getInferredAssemblageSequence(), stampCoordinate);
+        System.out.println("Inferred logic graph (alt path):  " + lg2);
         //exportDatabase(tts);
         //exportLogicGraphDatabase(tts);
+        
+        testExpressions();
+    }
+    
+    private int addConceptAltPath()
+    {
+        ConceptBuilderService conceptBuilderService = LookupService.getService(ConceptBuilderService.class);
+        conceptBuilderService.setDefaultLanguageForDescriptions(IsaacMetadataAuxiliaryBinding.ENGLISH);
+        conceptBuilderService.setDefaultDialectAssemblageForDescriptions(IsaacMetadataAuxiliaryBinding.US_ENGLISH_DIALECT);
+        conceptBuilderService.setDefaultLogicCoordinate(LogicCoordinates.getStandardElProfile());
+
+        LogicalExpressionBuilderService expressionBuilderService = LookupService.getService(LogicalExpressionBuilderService.class);
+        LogicalExpressionBuilder defBuilder = expressionBuilderService.getLogicalExpressionBuilder();
+
+        NecessarySet(And(ConceptAssertion(Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getConceptSequence()), defBuilder)));
+
+        LogicalExpression def = defBuilder.build();
+        log.info("Created definition:\n\n " + def);
+
+        ConceptBuilder builder = conceptBuilderService.getDefaultConceptBuilder("silly test", "a really silly test", def);
+
+        List createdComponents = new ArrayList();
+        
+        EditCoordinate ec = new EditCoordinateImpl(Get.identifierService().getNidForUuids(IsaacMetadataAuxiliaryBinding.USER.getPrimodialUuid()), 
+                Get.identifierService().getNidForUuids(IsaacMetadataAuxiliaryBinding.LOINC.getPrimodialUuid()),
+                Get.identifierService().getNidForUuids(IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getPrimodialUuid()));
+        
+        ConceptChronology concept = builder.build(ec, ChangeCheckerMode.ACTIVE, createdComponents);
+        return concept.getNid();
     }
 
     private void exportDatabase() throws InterruptedException, ExecutionException {
@@ -234,6 +291,10 @@ public class LogicIntegrationTests {
         log.info("  concepts in map: {}", Get.conceptService().getConceptCount());
 
         log.info("  sequences map: {}", Get.identifierService().getConceptSequenceStream().distinct().count());
+        
+        log.info("Indexing sememes for logic expression test");
+        tts.startIndexTask(SememeIndexer.class).get();
+        log.info("Indexing complete");
     }
 
     private void logResultDetails(ClassifierResults results, StampCoordinate stampCoordinate) {
@@ -339,6 +400,41 @@ public class LogicIntegrationTests {
         
         sb.append("]");
         return sb.toString();
+    }
+    
+    private void testExpressions() throws InterruptedException, ExecutionException, IOException
+    {
+        LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
+        StampCoordinate stampCoordinate = StampCoordinates.getDevelopmentLatest();
+        EditCoordinate editCoordinate = EditCoordinates.getDefaultUserSolorOverlay();
+        ClassifierService classifierService = Get.logicService().getClassifierService(stampCoordinate, logicCoordinate, editCoordinate);
+
+        new File("../logic-integration-tests/src/test/resources/expressionSample.txt");
+        ExpressionReader.read(new File("src/test/resources/expressionSample.txt")).forEach(parseTree ->
+        {
+            try
+            {
+                LogicalExpressionBuilder defBuilder = Get.logicalExpressionBuilderService().getLogicalExpressionBuilder();
+                ISAACVisitor visitor = new ISAACVisitor(defBuilder);
+                visitor.visit(parseTree);
+                LogicalExpression expression = defBuilder.build();
+                System.out.println("LOINC EXPRESSION SERVICE> Created definition:\n\n " + expression);
+                
+                int newSequence = classifierService.getConceptSequenceForExpression((LogicalExpressionOchreImpl) expression, editCoordinate).get();
+                System.out.println("LOINC EXPRESSION SERVICE> New sequence: " + newSequence);
+            }
+            catch (Exception e)
+            {
+                LogManager.getLogger().error("Error processing tree " + parseTree.toStringTree(), e);
+                throw new RuntimeException(e);
+            }
+        });
+    
+        System.out.println("LOINC EXPRESSION SERVICE> Classifying ...");
+        ClassifierResults results = classifierService.classify().get();
+        System.out.println("LOINC EXPRESSION SERVICE> Classification results: " + results);
+
+        System.out.println("LOINC EXPRESSION SERVICE> Done.");
     }
 
 }

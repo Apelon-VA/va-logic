@@ -194,7 +194,9 @@ public class ClassifierData implements ChronologyChangeListener {
             // not returning loaded concepts here, because incremental classification 
             // can affect concepts other than what was loaded. 
             reasoner.getClassifiedOntology().getAffectedNodes().forEach((node) -> {
-               node.getEquivalentConcepts().forEach((equalivent) -> affectedConceptSequences.add(Integer.parseInt(equalivent)));
+					if (node != null) { //TODO why does the classifier include null in the affected node set. 
+						node.getEquivalentConcepts().forEach((equalivent) -> affectedConceptSequences.add(Integer.parseInt(equalivent)));
+					}              
             });
         } else {
             return  loadedConcepts;
