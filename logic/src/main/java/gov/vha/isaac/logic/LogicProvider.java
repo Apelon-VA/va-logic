@@ -348,11 +348,18 @@ public class LogicProvider implements LogicService {
         if (someNode.getTypeConceptSequence() == IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getConceptSequence()) {
             AndNode andNode = (AndNode) someNode.getOnlyChild();
             andNode.getChildStream().forEach((roleGroupSomeNode) -> {
-                createSomeRole(originSequence, (RoleNodeSomeWithSequences) roleGroupSomeNode,
-                        stampSequence, premiseType, someNode.getNodeIndex())
-                        .forEach((adaptor) -> {
-                            roleStream.add(adaptor);
-                        });
+                if (roleGroupSomeNode instanceof RoleNodeSomeWithSequences)
+                {
+                    createSomeRole(originSequence, (RoleNodeSomeWithSequences) roleGroupSomeNode,
+                            stampSequence, premiseType, someNode.getNodeIndex())
+                            .forEach((adaptor) -> {
+                                roleStream.add(adaptor);
+                            });
+                }
+                else
+                {
+                    //TODO Keith - not sure what to do here...  getting a FeatureNodeWithSequences
+                }
             });
 
         } else {
