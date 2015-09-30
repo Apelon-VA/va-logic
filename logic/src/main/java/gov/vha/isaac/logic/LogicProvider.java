@@ -318,6 +318,8 @@ public class LogicProvider implements LogicService {
                             streamBuilder.accept(someRelAdaptor);
                         });
                 break;
+            case FEATURE:
+                break;  //TODO Keith, not sure how this should be handled
             default:
                 throw new UnsupportedOperationException("Can't handle: " + aNode.getNodeSemantic());
         }
