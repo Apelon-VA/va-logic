@@ -9,7 +9,7 @@
     
     <groupId>gov.vha.isaac.logic</groupId>
     <artifactId>logic-parent</artifactId>
-    <version>1.17</version>
+    <version>1.18</version>
     <name>${project.artifactId}: (MMP)</name>
     <packaging>pom</packaging>
     
@@ -18,10 +18,10 @@
     </scm>
     
     <properties>
-        <ochre.version>2.33</ochre.version>
-        <isaac-metadata.version>1.36</isaac-metadata.version>
-        <newtons-cradle.version>1.22</newtons-cradle.version>
-        <query.version>2.17</query.version>
+        <ochre.version>2.34</ochre.version>
+        <isaac-metadata.version>1.37</isaac-metadata.version>
+        <newtons-cradle.version>1.24</newtons-cradle.version>
+        <query.version>2.18</query.version>
         <snorocket-core.version>2.7.5</snorocket-core.version>
     </properties>
     
